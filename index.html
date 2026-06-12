@@ -482,7 +482,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
     </select>
     <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none">
       <input type="checkbox" id="cleanMode" style="accent-color:var(--amber);width:15px;height:15px"/>
-      No labels / pointer lines (I'll add my own)
+      No pointer / connector lines (keep labels)
     </label>
     <div class="hint" id="costHint">Select images, fill the form, paste your API key, then generate.</div>
   </div>
@@ -946,7 +946,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
     try{
       let prompt=refNote()+PROMPTS[id](i);
       if(document.getElementById("cleanMode").checked){
-        prompt+=" FINAL OVERRIDE — CLEAN VERSION: ignore every earlier instruction about titles, callout labels, connector lines, pointer lines, arrows, measurement lines, badges, icons or any overlay text. Render the SAME scene, background style, lighting and bag pose, but with ZERO text and ZERO graphic overlays of any kind (only the bag's own printed branding stays). Leave generous clean empty space around the bag where labels can be added later in editing.";
+        prompt+=" FINAL OVERRIDE — NO LINES: keep every title, label, callout card and badge exactly as specified above, but draw ABSOLUTELY NO connector lines, pointer lines, leader lines, arrows, dots or brackets between any text/card and the bag — all labels float freely near their parts. (Measurement arrows for dimensions, if specified above, are the only allowed lines.)";
       }
       const out = provider==="gemini"
         ? (serverMode ? await genGeminiServer(model,prompt,files,size) : await genGemini(model,key,prompt,files,size))
