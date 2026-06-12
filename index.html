@@ -165,6 +165,12 @@ textarea{resize:vertical;min-height:60px}
   padding:6px 11px;border-radius:99px;font-size:12px;cursor:pointer;transition:.15s;user-select:none;
 }
 .chip.on{background:rgba(245,166,35,.14);border-color:var(--amber);color:var(--amber)}
+.chip .chip-n{
+  display:none;width:38px;margin-left:7px;padding:2px 4px;
+  border:1px solid var(--line);border-radius:6px;background:var(--panel);
+  color:var(--amber);font-size:11px;text-align:center;
+}
+.chip.on .chip-n{display:inline-block}
 
 /* ---------- RIGHT PANEL ---------- */
 .right{padding:24px 28px 80px;overflow-y:auto;max-height:calc(100vh - 75px)}
@@ -411,8 +417,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
       <div class="field"><label class="f-label">Bag type</label>
         <select id="bagType">
           <option>School Backpack</option><option>Laptop Backpack</option><option>Casual Backpack</option>
-          <option>College Backpack</option><option>Kids Backpack</option><option>Trolley Bag</option><option>Duffel Bag</option>
-          <option>Overnighter</option>
+          <option>College Backpack</option><option>Kids Backpack</option><option>Overnighter</option><option>Trolley Bag</option><option>Duffel Bag</option>
         </select>
       </div>
       <div class="field"><label class="f-label">Colour / print</label><input type="text" id="colour"/></div>
@@ -485,6 +490,10 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
       <input type="checkbox" id="cleanMode" style="accent-color:var(--amber);width:15px;height:15px"/>
       No pointer / connector lines (keep labels)
     </label>
+    <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none">
+      <input type="checkbox" id="overlayMode" checked style="accent-color:var(--amber);width:15px;height:15px"/>
+      App-drawn labels (perfect text, zero lines)
+    </label>
     <div class="hint" id="costHint">Select images, fill the form, paste your API key, then generate.</div>
   </div>
 
@@ -517,7 +526,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
 <script>
 /* ================= DATA ================= */
 const COMFORT = ["Adjustable Shoulder Straps","Wide Padded Shoulder Straps","Bartacked Stitch on Load Points","Premium Quality Zippers","Breathable Back Panel","Super Soft Cushion Handle","Bottom Rib Pad","Durable Pullers","Lightweight","Premium Vegan Fabric"];
-const SPACE = ["Main Compartment","2 Main Compartments","Front Pocket","2 Front Pockets","Bottle Pocket","2 Bottle Slots","Side Zip Pocket","Easy Organiser","Premium Organiser","Padded Laptop Sleeve","Document Sleeve","Small Pockets"];
+const SPACE = ["Main Compartment","Front Pocket","Bottle Pocket","Side Zip Pocket","Easy Organiser","Premium Organiser","Padded Laptop Sleeve","Document Sleeve","Small Pocket"];
 const FITS = ["Books","Notebooks","Pencil Case","Lunch Box","Water Bottle","Umbrella","Folder","Wallet","Laptop","Tablet","Charger","Headphones","Shirt / Clothes","Power Bank"];
 
 const TYPES = [
@@ -534,12 +543,20 @@ const TYPES = [
 ];
 
 /* ================= UI BUILD ================= */
-function buildChips(el, arr){
-  el.innerHTML = arr.map(t=>`<span class="chip" data-v="${t}">${t}</span>`).join("");
-  el.addEventListener("click",e=>{ if(e.target.classList.contains("chip")) e.target.classList.toggle("on"); });
+function buildChips(el, arr, withCount){
+  el.innerHTML = arr.map(t=>`<span class="chip" data-v="${t}">${t}${withCount?'<input class="chip-n" type="number" min="2" max="9" placeholder="×" title="How many? (optional)"/>':""}</span>`).join("");
+  el.addEventListener("click",e=>{
+    if(e.target.classList.contains("chip-n")) return;
+    const c=e.target.closest(".chip");
+    if(c){
+      c.classList.toggle("on");
+      const n=c.querySelector(".chip-n");
+      if(n && !c.classList.contains("on")) n.value="";
+    }
+  });
 }
 buildChips(document.getElementById("comfortChips"),COMFORT);
-buildChips(document.getElementById("spaceChips"),SPACE);
+buildChips(document.getElementById("spaceChips"),SPACE,true);
 buildChips(document.getElementById("fitsChips"),FITS);
 
 const typesEl = document.getElementById("types");
@@ -691,7 +708,15 @@ keyInp.value = localStorage.getItem("pdp_key")||"";
 keyDot.classList.toggle("ok",keyOk());
 
 /* ================= PROMPTS ================= */
-function chips(el){ return [...document.querySelectorAll(`#${el} .chip.on`)].map(c=>c.dataset.v); }
+function chips(el){
+  return [...document.querySelectorAll(`#${el} .chip.on`)].map(c=>{
+    const base=c.dataset.v;
+    const nInp=c.querySelector(".chip-n");
+    const n=nInp?parseInt(nInp.value,10):NaN;
+    if(n>=2){ return `${n} ${/s$/i.test(base)?base:base+"s"}`; }
+    return base;
+  });
+}
 function info(){
   const H=document.getElementById("dimH").value, W=document.getElementById("dimW").value, D=document.getElementById("dimD").value;
   const cm = v=>v?(v*2.54).toFixed(1):"";
@@ -916,6 +941,63 @@ function compressImage(file, maxDimension = 1024) {
   });
 }
 
+/* ============ APP-DRAWN LABEL OVERLAY (canvas) ============ */
+const ICON_MAP=[
+  [/bottle/i,"🧴"],[/laptop/i,"💻"],[/organi[sz]er/i,"🗂️"],[/compartment/i,"📦"],
+  [/pocket/i,"👝"],[/strap/i,"🎒"],[/handle/i,"✋"],[/zip/i,"🧷"],[/light/i,"🪶"],
+  [/pad|cushion/i,"🛏️"],[/stitch|bartack/i,"🧵"],[/puller/i,"🔩"],[/sleeve|document/i,"💼"],
+  [/mesh/i,"🥅"],[/rib|base|bottom/i,"🛡️"],[/fabric|vegan/i,"🧶"],[/breathab|back panel/i,"🌬️"],
+  [/water|rain/i,"💧"],[/tear|tough|durab/i,"💪"],[/print|trendy/i,"🎨"],[/usb|charg/i,"🔌"],[/reflect/i,"✨"]
+];
+function iconFor(t){ for(const [re,e] of ICON_MAP) if(re.test(t)) return e; return "✔️"; }
+function loadImgEl(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
+function roundRectPath(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function wrapLines(ctx,text,maxW){
+  const words=text.split(" "), lines=[]; let cur="";
+  for(const w of words){ const t=cur?cur+" "+w:w;
+    if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
+  if(cur) lines.push(cur);
+  return lines;
+}
+async function overlayCards(dataUrl,labels,layout){
+  const img=await loadImgEl(dataUrl);
+  const W=img.width,H=img.height;
+  const c=document.createElement("canvas"); c.width=W; c.height=H;
+  const ctx=c.getContext("2d"); ctx.drawImage(img,0,0);
+  const fontPx=Math.round(W*0.0165), iconPx=Math.round(W*0.038), radius=W*0.018;
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  function drawCard(x,y,w,label){
+    ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
+    const lines=wrapLines(ctx,label,w-fontPx*1.4);
+    const h=fontPx*1.2+iconPx+fontPx*0.7+lines.length*fontPx*1.35+fontPx*1.2;
+    ctx.save();
+    ctx.shadowColor="rgba(20,40,70,0.18)"; ctx.shadowBlur=W*0.012; ctx.shadowOffsetY=W*0.004;
+    ctx.fillStyle="#ffffff"; roundRectPath(ctx,x,y,w,h,radius); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle="#1d3354";
+    ctx.font=`${iconPx}px "Segoe UI Emoji", Archivo, sans-serif`;
+    ctx.fillText(iconFor(label), x+w/2, y+fontPx*1.2+iconPx/2);
+    ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
+    lines.forEach((ln,k)=>ctx.fillText(ln, x+w/2, y+fontPx*1.2+iconPx+fontPx*0.7+k*fontPx*1.35+fontPx*0.65));
+    return h;
+  }
+  if(layout==="sides"){
+    const cardW=Math.round(W*0.20);
+    const leftLabels=labels.slice(0,Math.ceil(labels.length/2));
+    const rightLabels=labels.slice(Math.ceil(labels.length/2));
+    const margin=W*0.035, gap=H*0.03, topY=H*0.23;
+    let y=topY; for(const l of leftLabels){ y+=drawCard(margin,y,cardW,l)+gap; }
+    y=topY; for(const l of rightLabels){ y+=drawCard(W-margin-cardW,y,cardW,l)+gap; }
+  }else{
+    const n=labels.length, gap=W*0.018, margin=W*0.05;
+    const w=Math.min(W*0.22,(W-2*margin-(n-1)*gap)/n);
+    let x=(W-(w*n+gap*(n-1)))/2;
+    const y=H*0.80;
+    for(const l of labels){ drawCard(x,y,w,l); x+=w+gap; }
+  }
+  return c.toDataURL("image/png");
+}
+
 document.getElementById("genBtn").addEventListener("click", async ()=>{
   const key=keyInp.value.trim();
   const [provider,model]=document.getElementById("engine").value.split(":");
@@ -945,7 +1027,17 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
     resultsEl.prepend(card);
 
     try{
-      let prompt=refNote()+PROMPTS[id](i);
+      /* app-drawn labels: ask the AI for a clean image, overlay cards ourselves */
+      let overlayLabels=null, overlayLayout=null, iP=i;
+      if(document.getElementById("overlayMode").checked){
+        if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; iP={...i,comfort:[]}; }
+        if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; iP={...i,space:[]}; }
+        if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
+          if(L.length){ overlayLabels=L; overlayLayout="bottom"; iP={...i,needItems:""}; } }
+      }
+      let prompt=refNote()+PROMPTS[id](iP);
+      if(overlayLabels && overlayLayout==="sides") prompt+=" COMPOSITION: keep the bag centred and leave wide, completely empty background bands on the far left and far right edges of the image.";
+      if(overlayLabels && overlayLayout==="bottom") prompt+=" COMPOSITION: keep the bag in the upper two-thirds and leave the bottom quarter of the image as completely empty background.";
       if(document.getElementById("cleanMode").checked){
         prompt+=" FINAL OVERRIDE — NO LINES: keep every title, label, callout card and badge exactly as specified above, but draw ABSOLUTELY NO connector lines, pointer lines, leader lines, arrows, dots or brackets between any text/card and the bag — all labels float freely near their parts. (Measurement arrows for dimensions, if specified above, are the only allowed lines.)";
       }
@@ -953,7 +1045,11 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         ? (serverMode ? await genGeminiServer(model,prompt,files,size) : await genGemini(model,key,prompt,files,size))
         : await genOpenAI(key,prompt,files,size,quality);
 
-      const url=`data:${out.mime};base64,${out.b64}`;
+      let url=`data:${out.mime};base64,${out.b64}`;
+      if(overlayLabels){
+        try{ url=await overlayCards(url,overlayLabels,overlayLayout); }
+        catch(e){ console.warn("overlay failed",e); }
+      }
       card.querySelector(".r-img").innerHTML=`<input type="checkbox" class="r-pick" title="Select for download"/><img src="${url}"/>`;
       card.querySelector(".r-status").textContent="Done ✓";
       const dl=document.createElement("button");
