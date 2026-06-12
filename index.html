@@ -166,10 +166,14 @@ textarea{resize:vertical;min-height:60px}
 }
 .chip.on{background:rgba(245,166,35,.14);border-color:var(--amber);color:var(--amber)}
 .chip .chip-n{
-  display:none;width:38px;margin-left:7px;padding:2px 4px;
-  border:1px solid var(--line);border-radius:6px;background:var(--panel);
-  color:var(--amber);font-size:11px;text-align:center;
+  display:none;width:48px;margin-left:8px;padding:4px 6px;
+  border:1px solid var(--amber);border-radius:6px;background:#26201294;
+  color:var(--amber);font-size:13px;font-weight:700;text-align:center;
+  -moz-appearance:textfield;appearance:textfield;
 }
+.chip .chip-n::-webkit-inner-spin-button,
+.chip .chip-n::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.chip .chip-n::placeholder{color:#8a6a2a;font-weight:400}
 .chip.on .chip-n{display:inline-block}
 
 /* ---------- RIGHT PANEL ---------- */
@@ -544,7 +548,7 @@ const TYPES = [
 
 /* ================= UI BUILD ================= */
 function buildChips(el, arr, withCount){
-  el.innerHTML = arr.map(t=>`<span class="chip" data-v="${t}">${t}${withCount?'<input class="chip-n" type="number" min="2" max="9" placeholder="×" title="How many? (optional)"/>':""}</span>`).join("");
+  el.innerHTML = arr.map(t=>`<span class="chip" data-v="${t}">${t}${withCount?'<input class="chip-n" type="number" min="2" max="9" placeholder="Qty" title="How many? e.g. 2 = the bag has 2 of these (optional)"/>':""}</span>`).join("");
   el.addEventListener("click",e=>{
     if(e.target.classList.contains("chip-n")) return;
     const c=e.target.closest(".chip");
