@@ -2,13 +2,15 @@
    The API key lives in the GEMINI_API_KEY env var on Vercel — never in the browser.
    Optional: set APP_PASSWORD to require a shared password from the app. */
 module.exports = async (req, res) => {
+  try {
   if (req.method !== "POST") return res.status(405).json({ error: { message: "POST only" } });
 
-  const pass = process.env.APP_PASSWORD;
+  const pass = (process.env.APP_PASSWORD || "").trim();
   if (pass && req.headers["x-app-pass"] !== pass)
     return res.status(401).json({ error: { message: "Wrong or missing app password" } });
 
-  const key = process.env.GEMINI_API_KEY;
+  /* trim guards against stray whitespace/CR picked up when the env var was set */
+  const key = (process.env.GEMINI_API_KEY || "").trim();
   if (!key)
     return res.status(500).json({ error: { message: "GEMINI_API_KEY is not configured on the server" } });
 
@@ -41,4 +43,7 @@ module.exports = async (req, res) => {
     data = await r.json();
   }
   res.status(r.status).json(data);
+  } catch (err) {
+    res.status(500).json({ error: { message: "Server error: " + (err && err.message ? err.message : String(err)) } });
+  }
 };

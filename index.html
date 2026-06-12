@@ -404,8 +404,8 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
   <div class="sec">
     <div class="sec-title">2 · Product Info</div>
     <div class="row2">
-      <div class="field"><label class="f-label">Brand name</label><input type="text" id="brand" value="Priority"/></div>
-      <div class="field"><label class="f-label">Product / range name</label><input type="text" id="pname" placeholder="e.g. Space Academy"/></div>
+      <div class="field"><label class="f-label">Brand name</label><input type="text" id="brand"/></div>
+      <div class="field"><label class="f-label">Product / range name</label><input type="text" id="pname"/></div>
     </div>
     <div class="row2">
       <div class="field"><label class="f-label">Bag type</label>
@@ -414,25 +414,25 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
           <option>College Backpack</option><option>Kids Backpack</option><option>Trolley Bag</option><option>Duffel Bag</option>
         </select>
       </div>
-      <div class="field"><label class="f-label">Colour / print</label><input type="text" id="colour" placeholder="e.g. purple space print"/></div>
+      <div class="field"><label class="f-label">Colour / print</label><input type="text" id="colour"/></div>
     </div>
     <div class="row3">
-      <div class="field"><label class="f-label">Height (in)</label><input type="number" id="dimH" step="0.5" placeholder="18"/></div>
-      <div class="field"><label class="f-label">Width (in)</label><input type="number" id="dimW" step="0.5" placeholder="13"/></div>
-      <div class="field"><label class="f-label">Depth (in)</label><input type="number" id="dimD" step="0.5" placeholder="8"/></div>
+      <div class="field"><label class="f-label">Height (in)</label><input type="number" id="dimH" step="0.5"/></div>
+      <div class="field"><label class="f-label">Width (in)</label><input type="number" id="dimW" step="0.5"/></div>
+      <div class="field"><label class="f-label">Depth (in)</label><input type="number" id="dimD" step="0.5"/></div>
     </div>
     <div class="row2">
-      <div class="field"><label class="f-label">Capacity (litres)</label><input type="number" id="capacity" step="0.5" placeholder="28"/></div>
-      <div class="field"><label class="f-label">Age group</label><input type="text" id="ageGroup" placeholder="e.g. 7 – 10 years"/></div>
+      <div class="field"><label class="f-label">Capacity (litres)</label><input type="number" id="capacity" step="0.5"/></div>
+      <div class="field"><label class="f-label">Age group</label><input type="text" id="ageGroup"/></div>
     </div>
     <div class="row2">
       <div class="field"><label class="f-label">Model (lifestyle shot)</label>
         <select id="model"><option>Girl child</option><option>Boy child</option><option>Female adult</option><option>Male adult</option><option>No model</option></select>
       </div>
-      <div class="field"><label class="f-label">Background / Graphic Theme</label><input type="text" id="theme" value="clouds" placeholder="e.g. clouds, leaves, stars, space"/></div>
+      <div class="field"><label class="f-label">Background / Graphic Theme</label><input type="text" id="theme"/></div>
     </div>
-    <div class="field"><label class="f-label">Lifestyle background location</label><input type="text" id="bgLoc" placeholder="e.g. kids study room / college campus"/></div>
-    <div class="field"><label class="f-label">Model appearance (optional — describe the person)</label><textarea id="modelDesc" placeholder="e.g. 8-year-old Indian boy, short black hair, wearing a navy blue school uniform, cheerful smile"></textarea></div>
+    <div class="field"><label class="f-label">Lifestyle background location</label><input type="text" id="bgLoc"/></div>
+    <div class="field"><label class="f-label">Model appearance (optional — describe the person)</label><textarea id="modelDesc"></textarea></div>
   </div>
 
   <div class="sec">
@@ -452,8 +452,8 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
 
   <div class="sec">
     <div class="sec-title">6 · Additional Features</div>
-    <div class="field"><label class="f-label">"Everything You Need" badges (comma separated, first 4 used)</label><input type="text" id="needItems" placeholder="e.g. Waterproof, Tear Proof, Trendy Prints, Rubber Label Design"/></div>
-    <div class="field"><label class="f-label">Other features (used in Tech Spec callouts etc.)</label><textarea id="extras" placeholder="e.g. Raincover included, USB charging port, alien charm, waterproof fabric, reflective stripe…"></textarea></div>
+    <div class="field"><label class="f-label">"Everything You Need" badges (comma separated, first 4 used)</label><input type="text" id="needItems"/></div>
+    <div class="field"><label class="f-label">Other features (used in Tech Spec callouts etc.)</label><textarea id="extras"></textarea></div>
   </div>
 
 </div>
@@ -695,7 +695,7 @@ function info(){
   const H=document.getElementById("dimH").value, W=document.getElementById("dimW").value, D=document.getElementById("dimD").value;
   const cm = v=>v?(v*2.54).toFixed(1):"";
   return {
-    brand:document.getElementById("brand").value||"the brand",
+    brand:document.getElementById("brand").value,
     pname:document.getElementById("pname").value,
     bagType:document.getElementById("bagType").value,
     colour:document.getElementById("colour").value,
@@ -704,7 +704,7 @@ function info(){
     age:document.getElementById("ageGroup").value,
     model:document.getElementById("model").value,
     bg:document.getElementById("bgLoc").value,
-    theme:document.getElementById("theme").value || "clouds",
+    theme:document.getElementById("theme").value,
     comfort:chips("comfortChips"), space:chips("spaceChips"), fits:chips("fitsChips"),
     extras:document.getElementById("extras").value,
     needItems:document.getElementById("needItems").value,
@@ -712,23 +712,23 @@ function info(){
   };
 }
 
-const BASE = i => `ABSOLUTE PRODUCT FIDELITY — THIS IS A COMPOSITING TASK, NOT A DESIGN TASK: the bag in the output must be THE IDENTICAL physical ${i.bagType.toLowerCase()} shown in the attached product reference photos, as if those photos were cut out and re-lit in a new scene. Match ONE-TO-ONE: overall silhouette and proportions, every panel and seam, the exact number, size and position of pockets and zippers, zipper pullers, straps, handle shape, stitching, materials and textures, the brand label/badge in its exact position, colour [${i.colour||"exactly as shown in the photos"}] and any print pattern. Pay special attention to ACCENT COLOURS: any contrast-coloured zippers, piping, trims, linings or panels visible in the reference photos MUST appear in the same colour, same position and same brightness — never turn an accent-coloured part black or grey, even in dark or moody lighting. Do NOT invent, redesign, recolour, simplify, add or remove ANY part of the bag — if a detail is not visible in the reference photos, keep it plain and neutral rather than inventing one. Before finishing, verify the generated bag would be recognised as the same product as the reference photos by its owner. Brand: ${i.brand}${i.pname?` "${i.pname}"`:""}. Professional Amazon/Flipkart PDP listing image, high resolution, crisp studio quality. Every word of text must be spelled EXACTLY as specified below in clean modern sans-serif type — no extra text, no gibberish, no invented words.`;
+const BASE = i => `ABSOLUTE PRODUCT FIDELITY — THIS IS A COMPOSITING TASK, NOT A DESIGN TASK: the bag in the output must be THE IDENTICAL physical ${i.bagType.toLowerCase()} shown in the attached product reference photos, as if those photos were cut out and re-lit in a new scene. Match ONE-TO-ONE: overall silhouette and proportions, every panel and seam, the exact number, size and position of pockets and zippers, zipper pullers, straps, handle shape, stitching, materials and textures, the brand label/badge in its exact position, colour [${i.colour||"exactly as shown in the photos"}] and any print pattern. Pay special attention to ACCENT COLOURS: any contrast-coloured zippers, piping, trims, linings or panels visible in the reference photos MUST appear in the same colour, same position and same brightness — never turn an accent-coloured part black or grey, even in dark or moody lighting. Do NOT invent, redesign, recolour, simplify, add or remove ANY part of the bag — if a detail is not visible in the reference photos, keep it plain and neutral rather than inventing one. Before finishing, verify the generated bag would be recognised as the same product as the reference photos by its owner.${i.brand?` Brand: ${i.brand}${i.pname?` "${i.pname}"`:""}.`:""} Professional Amazon/Flipkart PDP listing image, high resolution, crisp studio quality. Every word of text must be spelled EXACTLY as specified below in clean modern sans-serif type — no extra text, no gibberish, no invented words.`;
 
 const PROMPTS = {
  white: i=>`${BASE(i)} Render ONLY the bag, front three-quarter angle, perfectly centred on a pure white #FFFFFF background with a soft natural contact shadow under the base. No text, no props, no badges, no logo overlays. Clean marketplace main-image.`,
- hero: i=>`${BASE(i)} Larger-than-life cinematic HERO SHOT: the bag stands oversized like a monument on a podium inside an imaginative 3D world built around the theme "${i.theme}"${i.colour?` (${i.colour})`:""}${i.age?`, designed to excite children aged ${i.age}`:""}. Rich depth, dramatic rim lighting, atmosphere particles. ${i.pname?`The environment visualises the theme "${i.pname}".`:""} Do NOT place any logo overlay, brand wordmark, watermark, label or text anywhere in the image — only the bag's own printed branding on the product itself. ZERO text in the image.`,
- life: i=>`${BASE(i)} Photorealistic LIFESTYLE photo: a ${i.model==="No model"?"natural scene with the bag placed believably":"happy "+i.model.toLowerCase()+" wearing the bag on BOTH shoulders, looking back over the shoulder and smiling at camera"}${i.age?` (clearly age ${i.age})`:""}, at ${i.bg||"a bright, tidy everyday Indian setting"}.${i.model!=="No model"&&i.modelDesc?` MODEL APPEARANCE: ${i.modelDesc}. The person must be an entirely fictional, generic individual matching this description — not a real or recognisable person.`:""} CRITICAL SCALE: the bag must be ${i.H||"correctly"} ${i.H?"inches tall":""} relative to the model's torso — not too big, not too small. Natural window light, shallow depth of field. A small rounded purple badge in the top-left corner reads exactly "AGE: ${i.age||"7 - 10 YEARS"}".`,
+ hero: i=>`${BASE(i)} Larger-than-life cinematic HERO SHOT: the bag stands oversized like a monument on a podium inside ${i.theme?`an imaginative 3D world built around the theme "${i.theme}"`:`a premium imaginative 3D world that matches the bag's own design and colours`}${i.age?`, designed to excite children aged ${i.age}`:""}. Rich depth, dramatic rim lighting, atmosphere particles. ${i.pname?`The environment visualises the theme "${i.pname}".`:""} Do NOT place any logo overlay, brand wordmark, watermark, label or text anywhere in the image — only the bag's own printed branding on the product itself. ZERO text in the image.`,
+ life: i=>`${BASE(i)} Photorealistic LIFESTYLE photo: a ${i.model==="No model"?"natural scene with the bag placed believably":"happy "+i.model.toLowerCase()+" wearing the bag on BOTH shoulders, looking back over the shoulder and smiling at camera"}${i.age?` (clearly age ${i.age})`:""}, at ${i.bg||"a bright, tidy everyday Indian setting"}.${i.model!=="No model"&&i.modelDesc?` MODEL APPEARANCE: ${i.modelDesc}. The person must be an entirely fictional, generic individual matching this description — not a real or recognisable person.`:""} CRITICAL SCALE: the bag must be ${i.H||"correctly"} ${i.H?"inches tall":""} relative to the model's torso — not too big, not too small. Natural window light, shallow depth of field. ${i.age?`A small rounded purple badge in the top-left corner reads exactly "AGE: ${i.age}".`:`No badges, no overlays and no text anywhere in the image.`}`,
  comfort: i=>{
    const cardPart = i.comfort.length
      ? `EXACTLY ${i.comfort.length} small white rounded callout cards arranged in two vertical columns — half on the left, half on the right — each card containing a tiny line icon of the feature on top and the feature name below in small dark text, one card per feature, each appearing exactly once, spelled letter-perfect, no extra cards: ${i.comfort.join(", ")}. The cards float freely beside the bag — NO connector lines, NO pointer lines, NO arrows between any card and the bag.`
      : `Do NOT draw any callout cards, feature labels or icons — only the title and the bag, with clean empty space around it.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble: "Comfort That" in dark text and "Carries Well" with the second word in an accent colour. Below, the BACK VIEW of the bag perfectly centred showing back panel and straps. ${cardPart} Background: soft pastel tone matching the bag's main colour with subtle 3D ${i.theme} elements at the bottom. Premium kids-catalogue style.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble: "Comfort That" in dark text and "Carries Well" with the second word in an accent colour. Below, the BACK VIEW of the bag perfectly centred showing back panel and straps. ${cardPart} Background: soft pastel tone matching the bag's main colour${i.theme?` with subtle 3D ${i.theme} elements at the bottom`:""}. Premium kids-catalogue style.`;
  },
  space: i=>{
    const cardPart = i.space.length
      ? `EXACTLY ${i.space.length} white rounded callout cards in two columns (left and right), each with a tiny icon and label, one card per feature, each appearing exactly once, spelled letter-perfect, no extra cards: ${i.space.join(", ")}. IMPORTANT: the cards float freely beside the bag — draw NO connector lines, NO pointer lines, NO arrows and NO leader lines between any card and the bag; nothing touches or points at the bag.`
      : `Do NOT draw any callout cards, labels or icons — only the title, subtitle and the bag, with clean empty space around it.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble: "Space Story" with the second word in an accent colour, and a small subtitle below: "Every Pocket, A New Adventure!". The bag shown at three-quarter angle slightly open, centred. ${cardPart} Background: soft pastel matching the bag colour, subtle 3D ${i.theme} elements and stars. Same design language as a premium school-bag listing.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble: "Space Story" with the second word in an accent colour, and a small subtitle below: "Every Pocket, A New Adventure!". The bag shown at three-quarter angle slightly open, centred. ${cardPart} Background: soft pastel matching the bag colour${i.theme?`, subtle 3D ${i.theme} elements`:""}. Same design language as a premium school-bag listing.`;
  },
  need: i=>{
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
@@ -736,14 +736,22 @@ const PROMPTS = {
    const badgePart = list.length
      ? `Exactly ${list.length} white rounded badge card${list.length>1?"s":""}, each with a small line icon on top and its label below in small dark text — ${list.map((b,idx)=>`the badge in the ${corners[idx]} reads exactly "${b}"`).join("; ")}. Each badge appears exactly once, spelled letter-perfect, no other badges anywhere. The badges float freely in their corners — NO connector lines, NO pointer lines, NO arrows between any badge and the bag.`
      : `Do NOT draw any badge cards, feature labels, icons or callouts — only the title and the bag, with clean empty space around the bag.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a decorative white rounded outline bubble: "EVERYTHING" in dark text, "YOU NEED" in accent colour, "IN A BAG" in dark text. Bag centred front view. ${badgePart} Soft pastel background matching the bag's colour with subtle ${i.theme} elements. No other text.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a decorative white rounded outline bubble: "EVERYTHING" in dark text, "YOU NEED" in accent colour, "IN A BAG" in dark text. Bag centred front view. ${badgePart} Soft pastel background matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}. No other text.`;
  },
- dims: i=>`${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background. Title at top centre in bold dark modern sans-serif: "Designed for Everyday Use", with a lighter grey subtitle below it: "Lightweight. Durable. Reliable.". Show the SAME bag TWICE, standing side by side at equal size: on the LEFT the full FRONT view, on the RIGHT the SIDE profile view of the identical bag. Along the far left edge of the front view a thin dark vertical measurement line with small arrowheads at both ends, with a label rotated vertically beside it reading exactly "HEIGHT ${i.H||"18"} INCHES (${i.Hcm||"45.7"} cm)". Below the front view a thin horizontal arrow line spanning its width, labelled underneath in three stacked lines: "WIDTH", "${i.W||"12"} INCHES", "(${i.Wcm||"30.5"} cm)". Below the side view a thin horizontal arrow line spanning its depth, labelled underneath in three stacked lines: "DEPTH", "${i.D||"5.5"} INCHES", "(${i.Dcm||"14.0"} cm)". In the upper area between the two bags, a white rounded rectangle badge with a thin dark outline reading "${i.cap||"28"}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it. Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`,
+ dims: i=>{
+   const m=[];
+   if(i.H) m.push(`Along the far left edge of the front view a thin dark vertical measurement line with small arrowheads at both ends, with a label rotated vertically beside it reading exactly "HEIGHT ${i.H} INCHES (${i.Hcm} cm)".`);
+   if(i.W) m.push(`Below the front view a thin horizontal arrow line spanning its width, labelled underneath in three stacked lines: "WIDTH", "${i.W} INCHES", "(${i.Wcm} cm)".`);
+   if(i.D) m.push(`Below the side view a thin horizontal arrow line spanning its depth, labelled underneath in three stacked lines: "DEPTH", "${i.D} INCHES", "(${i.Dcm} cm)".`);
+   if(i.cap) m.push(`In the upper area between the two bags, a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it.`);
+   const measurePart = m.length?m.join(" ")+" Show ONLY these measurements — do not invent any other number.":"Do NOT draw any measurement lines, arrows, dimension numbers or capacity badge — only the two bag views.";
+   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background. Title at top centre in bold dark modern sans-serif: "Designed for Everyday Use", with a lighter grey subtitle below it: "Lightweight. Durable. Reliable.". Show the SAME bag TWICE, standing side by side at equal size: on the LEFT the full FRONT view, on the RIGHT the SIDE profile view of the identical bag. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
+ },
  fits: i=>{
    const panelPart = i.fits.length
      ? `On the RIGHT half a large white rounded panel titled "Fits All This" containing a neat grid of small photorealistic item thumbnails, each labelled below in tiny text. STRICT ITEM LIST: the grid contains EXACTLY ${i.fits.length} tiles, one per item, in this order: ${i.fits.join(", ")}. NO DUPLICATION: each item appears EXACTLY ONCE — never repeat an item, a tile or a label anywhere in the image, even with different wording or a different thumbnail of the same object. Spell every label letter-perfect. Do NOT add any extra item, extra tile, or an "& More" tile — nothing beyond this list.`
      : `Do NOT draw any items panel, item thumbnails or item labels — only the title, subtitle and the bag, with clean empty space on the right half.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre in a white rounded outline bubble: "CARRY" in dark text "MORE" in accent colour, subtitle "Spacious enough to fit everything your child needs for school!". Bag front view on the LEFT half. ${panelPart} Soft pastel background matching the bag colour with subtle ${i.theme} elements.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre in a white rounded outline bubble: "CARRY" in dark text "MORE" in accent colour, subtitle "Spacious enough to fit everything your child needs for school!". Bag front view on the LEFT half. ${panelPart} Soft pastel background matching the bag colour${i.theme?` with subtle ${i.theme} elements`:""}.`;
  },
  open: i=>{
    const callouts = i.space.slice(0,4);
@@ -755,7 +763,7 @@ const PROMPTS = {
  },
  tech: i=>{
    const callouts = [...i.comfort, ...i.space, ...(i.extras?i.extras.split(/[,\n]/).map(s=>s.trim()).filter(Boolean):[])].slice(0,7);
-   return `${BASE(i)} PREMIUM DARK TECH-SPEC INFOGRAPHIC, like a high-end gear brand's engineering diagram. Background: very dark charcoal-to-black (#0c0f12) with a faint glowing circuit-board / blueprint line pattern on the floor plane and subtle hexagonal texture, dramatic studio rim lighting on the bag with a soft glowing reflection beneath it. The bag stands centred at three-quarter front angle, hero-lit, with a thin glowing accent-colour outline tracing its silhouette edges (accent colour sampled from the bag itself${i.colour?`, the ${i.colour}`:""}). TITLE at top centre in large bold uppercase pale-grey sans-serif on two lines: "ENGINEERED FOR" / "MAXIMUM CARRY". ${callouts.length?`Around the bag, EXACTLY ${callouts.length} feature callouts in small uppercase letter-spaced pale-grey text, each appearing exactly once, spelled letter-perfect, each connected to its exact part of the bag by a thin elbow-bend hairline with a small dot endpoint, distributed evenly left and right: ${callouts.join(", ")}.`:`Do NOT draw any feature callouts or callout lines around the bag — leave the sides clean.`} DIMENSIONS drawn as thin glowing accent-colour measurement arrows with arrowheads: a vertical arrow along the left side of the bag labelled "HEIGHT: ${i.H||"18"} Inch" (text rotated vertically), a horizontal arrow under the front edge labelled "WIDTH: ${i.W||"13"} Inch", and a diagonal arrow along the base side edge labelled "DEPTH: ${i.D||"8"} Inch". On the upper right, a futuristic HUD-style rounded badge panel with a thin glowing accent border, dark translucent fill and corner notches, reading "CAPACITY:" in small pale text and "${i.cap||"28"}L" in large bold accent-colour text, with a small wireframe cube icon beside it. In the top-left under the title, two small thin-line material icons in rounded square outlines with tiny labels beneath: "BALLISTIC NYLON" and "WEATHER RESISTANT". All linework hairline-thin and precise, futuristic but clean. No other text anywhere.`;
+   return `${BASE(i)} PREMIUM DARK TECH-SPEC INFOGRAPHIC, like a high-end gear brand's engineering diagram. Background: very dark charcoal-to-black (#0c0f12) with a faint glowing circuit-board / blueprint line pattern on the floor plane and subtle hexagonal texture, dramatic studio rim lighting on the bag with a soft glowing reflection beneath it. The bag stands centred at three-quarter front angle, hero-lit, with a thin glowing accent-colour outline tracing its silhouette edges (accent colour sampled from the bag itself${i.colour?`, the ${i.colour}`:""}). TITLE at top centre in large bold uppercase pale-grey sans-serif on two lines: "ENGINEERED FOR" / "MAXIMUM CARRY". ${callouts.length?`Around the bag, EXACTLY ${callouts.length} feature callouts in small uppercase letter-spaced pale-grey text, each appearing exactly once, spelled letter-perfect, each connected to its exact part of the bag by a thin elbow-bend hairline with a small dot endpoint, distributed evenly left and right: ${callouts.join(", ")}.`:`Do NOT draw any feature callouts or callout lines around the bag — leave the sides clean.`} ${(()=>{const a=[];if(i.H)a.push(`a vertical arrow along the left side of the bag labelled "HEIGHT: ${i.H} Inch" (text rotated vertically)`);if(i.W)a.push(`a horizontal arrow under the front edge labelled "WIDTH: ${i.W} Inch"`);if(i.D)a.push(`a diagonal arrow along the base side edge labelled "DEPTH: ${i.D} Inch"`);return a.length?`DIMENSIONS drawn as thin glowing accent-colour measurement arrows with arrowheads: ${a.join(", ")}. Show ONLY these measurements — do not invent any other number.`:`Do NOT draw any measurement arrows or dimension numbers.`;})()} ${i.cap?`On the upper right, a futuristic HUD-style rounded badge panel with a thin glowing accent border, dark translucent fill and corner notches, reading "CAPACITY:" in small pale text and "${i.cap}L" in large bold accent-colour text, with a small wireframe cube icon beside it.`:`Do NOT draw any capacity badge.`} All linework hairline-thin and precise, futuristic but clean. No other text anywhere.`;
  }
 };
 
@@ -1040,7 +1048,10 @@ async function genGeminiServer(model,prompt,files,size){
     const p=window.prompt("This app is password protected. Enter the app password:");
     if(p){ localStorage.setItem("pdp_pass",p); res=await doFetch(); }
   }
-  const data=await res.json();
+  const raw=await res.text();
+  let data;
+  try{ data=JSON.parse(raw); }
+  catch{ throw new Error(`Server error (HTTP ${res.status}): ${raw.slice(0,140)}`); }
   if(!res.ok) throw new Error(data?.error?.message||`HTTP ${res.status}`);
   const cand=data.candidates?.[0];
   const part=(cand?.content?.parts||[]).find(p=>p.inlineData||p.inline_data);
