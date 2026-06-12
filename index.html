@@ -681,8 +681,13 @@ function renderProductGallery() {
 const keyInp=document.getElementById("apiKey"), keyDot=document.getElementById("keyDot");
 function isGeminiKey(v){ return v.startsWith("AIza")||v.startsWith("AQ.")||(!v.startsWith("sk-")&&v.length>20); }
 function keyOk(){ const v=keyInp.value.trim(); return v.length>20&&(isGeminiKey(v)||v.startsWith("sk-")); }
-keyInp.addEventListener("input",()=>keyDot.classList.toggle("ok",keyOk()));
-keyInp.placeholder="Gemini key (AIza…/AQ.…)  /  OpenAI key (sk-…)";
+keyInp.addEventListener("input",()=>{
+  localStorage.setItem("pdp_key", keyInp.value.trim());
+  keyDot.classList.toggle("ok",keyOk());
+});
+keyInp.placeholder="API key (optional — server key used if empty)";
+keyInp.value = localStorage.getItem("pdp_key")||"";
+keyDot.classList.toggle("ok",keyOk());
 
 /* ================= PROMPTS ================= */
 function chips(el){ return [...document.querySelectorAll(`#${el} .chip.on`)].map(c=>c.dataset.v); }
@@ -905,7 +910,9 @@ function compressImage(file, maxDimension = 1024) {
 document.getElementById("genBtn").addEventListener("click", async ()=>{
   const key=keyInp.value.trim();
   const [provider,model]=document.getElementById("engine").value.split(":");
-  if(provider==="gemini" && !isGeminiKey(key)) return showToast("Nano Banana needs a Gemini API key (starts with AIza or AQ.). Get one free at aistudio.google.com/apikey");
+  /* gemini with no key → use the server-side key via /api/generate (hosted site only) */
+  const serverMode = provider==="gemini" && !isGeminiKey(key);
+  if(serverMode && location.protocol==="file:") return showToast("Opened as a local file — paste a Gemini API key, or use the hosted site to generate with the server key.");
   if(provider==="openai" && !key.startsWith("sk-")) return showToast("gpt-image-1 needs an OpenAI key (starts with sk-).");
   if(productImgs.length === 0) return showToast("Upload at least one product photo first.");
   const sel=selectedTypes();
@@ -934,7 +941,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         prompt+=" FINAL OVERRIDE — CLEAN VERSION: ignore every earlier instruction about titles, callout labels, connector lines, pointer lines, arrows, measurement lines, badges, icons or any overlay text. Render the SAME scene, background style, lighting and bag pose, but with ZERO text and ZERO graphic overlays of any kind (only the bag's own printed branding stays). Leave generous clean empty space around the bag where labels can be added later in editing.";
       }
       const out = provider==="gemini"
-        ? await genGemini(model,key,prompt,files,size)
+        ? (serverMode ? await genGeminiServer(model,prompt,files,size) : await genGemini(model,key,prompt,files,size))
         : await genOpenAI(key,prompt,files,size,quality);
 
       const url=`data:${out.mime};base64,${out.b64}`;
@@ -1004,6 +1011,36 @@ async function genGemini(model,key,prompt,files,size){
     });
     data=await res.json();
   }
+  if(!res.ok) throw new Error(data?.error?.message||`HTTP ${res.status}`);
+  const cand=data.candidates?.[0];
+  const part=(cand?.content?.parts||[]).find(p=>p.inlineData||p.inline_data);
+  if(!part){
+    const reason=cand?.finishReason?` (${cand.finishReason})`:"";
+    const txt=(cand?.content?.parts||[]).find(p=>p.text)?.text||"";
+    throw new Error("No image returned"+reason+(txt?": "+txt.slice(0,120):""));
+  }
+  const inl=part.inlineData||part.inline_data;
+  return {b64:inl.data, mime:inl.mimeType||inl.mime_type||"image/png"};
+}
+
+/* ---------- Gemini via server key (/api/generate) ---------- */
+async function genGeminiServer(model,prompt,files,size){
+  const images=[];
+  for(const f of files) images.push({mime:f.type||"image/png", data:await toB64(f)});
+  const doFetch = ()=>fetch("/api/generate",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      ...(localStorage.getItem("pdp_pass")?{"x-app-pass":localStorage.getItem("pdp_pass")}:{})
+    },
+    body:JSON.stringify({model,prompt,images,size})
+  });
+  let res=await doFetch();
+  if(res.status===401){
+    const p=window.prompt("This app is password protected. Enter the app password:");
+    if(p){ localStorage.setItem("pdp_pass",p); res=await doFetch(); }
+  }
+  const data=await res.json();
   if(!res.ok) throw new Error(data?.error?.message||`HTTP ${res.status}`);
   const cand=data.candidates?.[0];
   const part=(cand?.content?.parts||[]).find(p=>p.inlineData||p.inline_data);
