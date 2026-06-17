@@ -1040,10 +1040,12 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
     if(_iu){
       try{
         const ic=await loadImgEl(_iu);
+        /* white background so transparent PNGs don't show AI background */
         ctx.save();
         ctx.shadowColor="rgba(20,40,70,0.22)"; ctx.shadowBlur=W*0.014; ctx.shadowOffsetY=W*0.005;
-        ctx.drawImage(ic,x,y,w,w);
+        ctx.fillStyle="#ffffff"; roundRectPath(ctx,x,y,w,w,W*0.018); ctx.fill();
         ctx.restore();
+        ctx.drawImage(ic,x,y,w,w);
         return w;
       }catch(e){}
     }
