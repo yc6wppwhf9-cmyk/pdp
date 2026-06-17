@@ -432,7 +432,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
       <div class="field"><label class="f-label">Depth (in)</label><input type="number" id="dimD" step="0.5"/></div>
     </div>
     <div class="row2">
-      <div class="field"><label class="f-label">Capacity (litres)</label><input type="number" id="capacity" step="0.5"/></div>
+      <div class="field"><label class="f-label">Capacity (litres) <span id="capAutoLabel" style="color:var(--green);font-size:10px;display:none">(auto)</span></label><input type="number" id="capacity" step="0.5" placeholder="auto-calculated from dims" autocomplete="off"/></div>
       <div class="field"><label class="f-label">Age group</label><input type="text" id="ageGroup"/></div>
     </div>
     <div class="row2">
@@ -594,6 +594,34 @@ document.getElementById("engine").addEventListener("change",updateHint);
 document.getElementById("quality").addEventListener("change",updateHint);
 updateHint();
 
+/* ---- AUTO CAPACITY from H×W×D ---- */
+const capField = document.getElementById("capacity");
+const capAutoLabel = document.getElementById("capAutoLabel");
+/* When user types manually, drop the auto flag so we stop overriding */
+capField.addEventListener("input", () => {
+  delete capField.dataset.auto;
+  capAutoLabel.style.display = "none";
+});
+function autoCalcCapacity() {
+  /* Only auto-fill when the field is empty OR was previously auto-filled */
+  if (capField.value !== "" && capField.dataset.auto !== "1") return;
+  const H = parseFloat(document.getElementById("dimH").value);
+  const W = parseFloat(document.getElementById("dimW").value);
+  const D = parseFloat(document.getElementById("dimD").value);
+  if (H > 0 && W > 0 && D > 0) {
+    capField.value = Math.round(H * W * D * 0.016387 * 10) / 10;
+    capField.dataset.auto = "1";
+    capAutoLabel.style.display = "inline";
+  } else if (capField.dataset.auto === "1") {
+    capField.value = "";
+    delete capField.dataset.auto;
+    capAutoLabel.style.display = "none";
+  }
+}
+["dimH","dimW","dimD"].forEach(dimId => {
+  document.getElementById(dimId).addEventListener("input", autoCalcCapacity);
+});
+
 /* uploads */
 let productImgs = [];
 let logoImg = null;
@@ -745,8 +773,8 @@ function info(){
 const BASE = i => `ABSOLUTE PRODUCT FIDELITY — THIS IS A COMPOSITING TASK, NOT A DESIGN TASK: the bag in the output must be THE IDENTICAL physical ${i.bagType.toLowerCase()} shown in the attached product reference photos, as if those photos were cut out and re-lit in a new scene. Match ONE-TO-ONE: overall silhouette and proportions, every panel and seam, the exact number, size and position of pockets and zippers, zipper pullers, straps, handle shape, stitching, materials and textures, the brand label/badge in its exact position, colour [${i.colour||"exactly as shown in the photos"}] and any print pattern. Pay special attention to ACCENT COLOURS: any contrast-coloured zippers, piping, trims, linings or panels visible in the reference photos MUST appear in the same colour, same position and same brightness — never turn an accent-coloured part black or grey, even in dark or moody lighting. Do NOT invent, redesign, recolour, simplify, add or remove ANY part of the bag — if a detail is not visible in the reference photos, keep it plain and neutral rather than inventing one. Before finishing, verify the generated bag would be recognised as the same product as the reference photos by its owner.${i.brand?` Brand: ${i.brand}${i.pname?` "${i.pname}"`:""}.`:""} Professional Amazon/Flipkart PDP listing image, high resolution, crisp studio quality. Every word of text must be spelled EXACTLY as specified below in clean modern sans-serif type — no extra text, no gibberish, no invented words. PERMANENT DESIGN RULE — NO POINTING: never draw a callout line, leader line, connector stroke, stem, tick, bracket or dot that points at, reaches towards, or touches the product. Every label, card and badge is a fully detached, closed element floating with plain clean background between it and the product. The ONLY exception is a measurement arrow if one is explicitly specified later in this brief — nothing else may form a line.`;
 
 const PROMPTS = {
- white: i=>`${BASE(i)} Render ONLY the bag, front three-quarter angle, perfectly centred on a pure white #FFFFFF background with a soft natural contact shadow under the base. No text, no props, no badges, no logo overlays. Clean marketplace main-image.`,
- hero: i=>`${BASE(i)} Larger-than-life cinematic HERO SHOT: the bag stands oversized like a monument on a podium inside ${i.theme?`an imaginative 3D world inspired by this theme: ${i.theme} (the theme phrase is creative direction for the scenery ONLY — NEVER write these theme words anywhere in the image)`:`a premium imaginative 3D world that matches the bag's own design and colours`}${i.age?`, designed to excite children aged ${i.age}`:""}. Rich depth, dramatic rim lighting, atmosphere particles. ${i.pname?`The environment visualises the spirit of the product range ${i.pname} (scenery inspiration only — never written as text).`:""} Do NOT place any logo overlay, brand wordmark, watermark, label or text anywhere in the image — only the bag's own printed branding on the product itself. ZERO text in the image.`,
+ white: i=>`${BASE(i)} IMPORTANT: Only ONE product photo is attached — use it exactly as captured. Render ONLY the bag in a STRAIGHT FRONT VIEW (facing the camera directly, not angled), perfectly centred on a pure white #FFFFFF background with a soft natural contact shadow under the base. No text, no props, no badges, no logo overlays. Clean marketplace main-image.`,
+ hero: i=>`${BASE(i)} CINEMATIC LARGER-THAN-LIFE HERO SHOT — photorealistic composite photography style, NOT an illustration or 3D render. The bag stands as a COLOSSAL MONUMENT 5–8 storeys tall, composited into a real-world location that perfectly matches the bag's personality${i.theme?`: the setting is directly inspired by "${i.theme}" (scenery direction only — NEVER write this phrase as text anywhere in the image)`:`, chosen based on the bag's own print, colour and character`}.${i.age?` The scene must feel exciting and magical to ${i.age}-year-olds.`:""} SCALE: at the base of the giant bag, tiny real-looking people — pedestrians, students, children, or fans (whichever suits the setting) — are going about their normal lives, completely dwarfed by the bag. Their human scale makes the enormity of the bag dramatic and awe-inspiring, exactly like a real-world installation or landmark. CAMERA ANGLE: slightly low, wide-angle lens looking upward at the bag against the sky or backdrop — the bag fills the frame from ground to top edge. LIGHTING: fully photoreal, cinematic natural light (golden hour, overcast drama, or bright midday depending on setting) with a realistic shadow cast by the bag onto the ground beneath it. The background environment — whether a sports stadium, prehistoric jungle, shopping mall, university campus, cityscape, beach or any other real place — must look completely photoreal, with authentic textures, correct perspective, and real atmospheric depth. ${i.pname?`The spirit of the product range "${i.pname}" should be felt in the choice of location and mood (location inspiration only — never written as text).`:""} ZERO text in the image — no overlaid brand wordmarks, no captions, no signage invented for the bag — only text that naturally exists in the real-world environment and only the bag's own printed branding exactly as it appears on the product.`,
  life: i=>`${BASE(i)} Photorealistic LIFESTYLE photo: a ${i.model==="No model"?"natural scene with the bag placed believably":"happy "+i.model.toLowerCase()+" wearing the bag on BOTH shoulders, looking back over the shoulder and smiling at camera"}${i.age?` (clearly age ${i.age})`:""}, at ${i.bg||"a bright, tidy everyday Indian setting"}.${i.model!=="No model"&&i.modelDesc?` MODEL APPEARANCE: ${i.modelDesc}. The person must be an entirely fictional, generic individual matching this description — not a real or recognisable person.`:""} CRITICAL SCALE: the bag must be ${i.H||"correctly"} ${i.H?"inches tall":""} relative to the model's torso — not too big, not too small. Natural window light, shallow depth of field. ${i.age?`A small rounded purple badge in the top-left corner reads exactly "AGE: ${i.age}".`:`No badges, no overlays and no text anywhere in the image.`}`,
  comfort: i=>{
    const cardPart = i.comfort.length
@@ -798,15 +826,22 @@ const PROMPTS = {
 };
 
 /* Describes the role of each attached reference image, in order */
-function refNote(){
+function refNote(typeId){
   let n=1, s=`Attached reference images, in order:`;
-  productImgs.forEach((img, idx) => {
-    s += ` (${n}) product photo angle ${idx+1} — replicate this bag with complete fidelity.`;
-    n++;
-  });
-  if(logoImg){ s+=` (${n}) the brand logo — use this exact logo wherever a logo is needed.`; n++; }
-  if(modelImg){ s+=` (${n}) lifestyle composition and pose reference photo — use ONLY for composition, lighting, bag scale, and pose reference. Do NOT copy the face, facial features, or specific identity of the person. Keep the generated face completely generic and brand-new to comply with safety policies.`; n++; }
-  if(styleImg){ s+=` (${n}) a finished approved PDP design from this brand — COPY its layout, composition, title bubble style, callout card design, typography, connector lines, background treatment and overall visual language as closely as possible, but feature THIS product and ONLY the text specified in the brief.`; }
+  if(typeId==="white"){
+    /* White BG: send only the first product photo (front angle) */
+    s+=` (1) product front-facing photo — render this exact bag as shown here, FRONT VIEW only.`;
+    n=2;
+    if(logoImg){ s+=` (${n}) the brand logo — for reference only.`; n++; }
+  } else {
+    productImgs.forEach((img, idx) => {
+      s += ` (${n}) product photo angle ${idx+1} — replicate this bag with complete fidelity.`;
+      n++;
+    });
+    if(logoImg){ s+=` (${n}) the brand logo — use this exact logo wherever a logo is needed.`; n++; }
+    if(modelImg){ s+=` (${n}) lifestyle composition and pose reference photo — use ONLY for composition, lighting, bag scale, and pose reference. Do NOT copy the face, facial features, or specific identity of the person. Keep the generated face completely generic and brand-new to comply with safety policies.`; n++; }
+    if(styleImg){ s+=` (${n}) a finished approved PDP design from this brand — COPY its layout, composition, title bubble style, callout card design, typography, connector lines, background treatment and overall visual language as closely as possible, but feature THIS product and ONLY the text specified in the brief.`; }
+  }
   return s+" BRIEF: ";
 }
 
@@ -846,10 +881,19 @@ function mStep(d){ mIdx=(mIdx+d+mList.length)%mList.length; renderModal(); }
 mPrev.onclick=()=>mStep(-1);
 mNext.onclick=()=>mStep(1);
 document.getElementById("mClose").onclick=closeModal;
+/* Build a download filename slug from brand + product name + image type */
+function prodSlug(typeName){
+  const brand = document.getElementById("brand").value.trim();
+  const pname = document.getElementById("pname").value.trim();
+  const base = [brand, pname].filter(Boolean).join("_") || "pdp";
+  const type = (typeName||"").trim();
+  return [base, type].filter(Boolean).join("_").replaceAll(/\s+/g,"_").replaceAll(/[^a-zA-Z0-9_\-]/g,"");
+}
+
 document.getElementById("mDl").onclick=()=>{
   const a=document.createElement("a");
   a.href=mImg.src;
-  a.download=`${(mName.textContent||"pdp").replaceAll(" ","_")}.png`;
+  a.download=`${prodSlug(mName.textContent)}.png`;
   a.click();
 };
 mImg.addEventListener("click",()=>mImg.classList.toggle("zoomed"));
@@ -890,10 +934,10 @@ document.getElementById("dlAll").onclick=async()=>{
     const card=p.closest(".rcard");
     const img=card.querySelector(".r-img img");
     if(!img) continue;
-    const name=((card.querySelector(".r-name")||{}).textContent||"pdp").replaceAll(" ","_");
+    const typeName=(card.querySelector(".r-name")||{}).textContent||"";
     const a=document.createElement("a");
     a.href=img.src;
-    a.download=`${name}_${String(n++).padStart(2,"0")}.png`;
+    a.download=`${prodSlug(typeName)}_${String(n++).padStart(2,"0")}.png`;
     a.click();
     /* small gap so the browser doesn't block rapid downloads */
     await new Promise(r=>setTimeout(r,450));
@@ -1002,6 +1046,41 @@ async function overlayCards(dataUrl,labels,layout){
   return c.toDataURL("image/png");
 }
 
+/* Draws a guaranteed capacity badge centred between the two bag views in the dims image */
+async function overlayCapacityBadge(dataUrl, capLitres, size) {
+  const img = await loadImgEl(dataUrl);
+  const W = img.width, H = img.height;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
+  const isPortrait = size === "1024x1536";
+  const bW = Math.round(W * 0.17);
+  const bH = Math.round(H * (isPortrait ? 0.075 : 0.115));
+  const bx = Math.round((W - bW) / 2);
+  const by = Math.round(H * (isPortrait ? 0.895 : 0.42));
+  const r  = Math.round(bH * 0.22);
+  const numSz = Math.round(bH * 0.46);
+  const lblSz = Math.round(bH * 0.23);
+  /* shadow + fill */
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.18)"; ctx.shadowBlur = W * 0.012; ctx.shadowOffsetY = W * 0.004;
+  ctx.fillStyle = "#ffffff"; roundRectPath(ctx, bx, by, bW, bH, r); ctx.fill();
+  ctx.restore();
+  /* border */
+  ctx.save();
+  roundRectPath(ctx, bx, by, bW, bH, r);
+  ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = Math.max(2, Math.round(W * 0.003)); ctx.stroke();
+  ctx.restore();
+  /* text */
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#111111";
+  ctx.font = `700 ${numSz}px Archivo, Arial, sans-serif`;
+  ctx.fillText(`${capLitres}L`, bx + bW / 2, by + bH * 0.4);
+  ctx.font = `600 ${lblSz}px Archivo, Arial, sans-serif`;
+  ctx.fillStyle = "#444444";
+  ctx.fillText("CAPACITY", bx + bW / 2, by + bH * 0.76);
+  return c.toDataURL("image/png");
+}
+
 document.getElementById("genBtn").addEventListener("click", async ()=>{
   const key=keyInp.value.trim();
   const [provider,model]=document.getElementById("engine").value.split(":");
@@ -1017,9 +1096,20 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
   const btn=document.getElementById("genBtn"); btn.disabled=true;
   if(resultsEl.querySelector(".empty")) resultsEl.innerHTML="";
 
-  const rawFiles=[...productImgs]; if(logoImg) rawFiles.push(logoImg); if(modelImg) rawFiles.push(modelImg); if(styleImg) rawFiles.push(styleImg);
   showToast("Resizing uploaded images to fit API limits...");
-  const files = await Promise.all(rawFiles.map(f => compressImage(f)));
+  const compressedProds = await Promise.all(productImgs.map(f => compressImage(f)));
+  const compressedLogo = logoImg ? await compressImage(logoImg) : null;
+  const compressedModel = modelImg ? await compressImage(modelImg) : null;
+  const compressedStyle = styleImg ? await compressImage(styleImg) : null;
+
+  const files = [...compressedProds];
+  if(compressedLogo) files.push(compressedLogo);
+  if(compressedModel) files.push(compressedModel);
+  if(compressedStyle) files.push(compressedStyle);
+
+  /* White BG uses only the first product photo (front angle) + optional logo */
+  const filesWhite = [compressedProds[0]];
+  if(compressedLogo) filesWhite.push(compressedLogo);
 
   for(const id of sel){
     const t=TYPES.find(x=>x.id===id);
@@ -1032,33 +1122,40 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
 
     try{
       /* app-drawn labels: ask the AI for a clean image, overlay cards ourselves */
-      let overlayLabels=null, overlayLayout=null, iP=i;
+      let overlayLabels=null, overlayLayout=null, overlayCapLitres=null, iP=i;
       if(document.getElementById("overlayMode").checked){
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; iP={...i,comfort:[]}; }
         if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; iP={...i,space:[]}; }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
           if(L.length){ overlayLabels=L; overlayLayout="bottom"; iP={...i,needItems:""}; } }
       }
-      let prompt=refNote()+PROMPTS[id](iP);
+      /* Capacity badge is ALWAYS canvas-drawn for dims (ensures portrait goes to bottom) */
+      if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...iP,cap:""}; }
+      const filesToUse = id === "white" ? filesWhite : files;
+      let prompt=refNote(id)+PROMPTS[id](iP);
       if(overlayLabels && overlayLayout==="sides") prompt+=" COMPOSITION: keep the bag centred and leave wide, completely empty background bands on the far left and far right edges of the image.";
       if(overlayLabels && overlayLayout==="bottom") prompt+=" COMPOSITION: keep the bag in the upper two-thirds and leave the bottom quarter of the image as completely empty background.";
       if(document.getElementById("cleanMode").checked){
         prompt+=" FINAL OVERRIDE — NO LINES: keep every title, label, callout card and badge exactly as specified above, but draw ABSOLUTELY NO connector lines, pointer lines, leader lines, arrows, dots or brackets between any text/card and the bag — all labels float freely near their parts. (Measurement arrows for dimensions, if specified above, are the only allowed lines.)";
       }
       const out = provider==="gemini"
-        ? (serverMode ? await genGeminiServer(model,prompt,files,size) : await genGemini(model,key,prompt,files,size))
-        : await genOpenAI(key,prompt,files,size,quality);
+        ? (serverMode ? await genGeminiServer(model,prompt,filesToUse,size) : await genGemini(model,key,prompt,filesToUse,size))
+        : await genOpenAI(key,prompt,filesToUse,size,quality);
 
       let url=`data:${out.mime};base64,${out.b64}`;
       if(overlayLabels){
         try{ url=await overlayCards(url,overlayLabels,overlayLayout); }
         catch(e){ console.warn("overlay failed",e); }
       }
+      if(overlayCapLitres){
+        try{ url=await overlayCapacityBadge(url,overlayCapLitres,size); }
+        catch(e){ console.warn("capacity badge overlay failed",e); }
+      }
       card.querySelector(".r-img").innerHTML=`<input type="checkbox" class="r-pick" title="Select for download"/><img src="${url}"/>`;
       card.querySelector(".r-status").textContent="Done ✓";
       const dl=document.createElement("button");
       dl.className="mini"; dl.textContent="⬇ PNG";
-      dl.onclick=()=>{ const a=document.createElement("a"); a.href=url; a.download=`${(i.brand||"pdp").replaceAll(" ","_")}_${id}.png`; a.click(); };
+      dl.onclick=()=>{ const a=document.createElement("a"); a.href=url; a.download=`${prodSlug(t.name)}.png`; a.click(); };
       card.querySelector(".r-foot").appendChild(dl);
       const re=document.createElement("button");
       re.className="mini"; re.textContent="↻";
