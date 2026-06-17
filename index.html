@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SnapToShelf — Marketplace Listing Image Generator</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='white'/%3E%3Cpath fill='%2336343A' d='M10 30a20 20 0 0 1 20-20h12a6 6 0 0 1 6 6v22a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6z'/%3E%3Cpath fill='%2338719F' d='M10 56a6 6 0 0 1 6-6h26a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6L18 92c-4 1.7-8-1-8-6z'/%3E%3Cpath fill='%23EF4B3E' d='M58 16a6 6 0 0 1 6-6h20a6 6 0 0 1 6 7l-8 58a8 8 0 0 1-8 7H64a6 6 0 0 1-6-6z'/%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#101114;
+  --panel:#17181d;
+  --panel2:#1d1f26;
+  --line:#2a2d36;
+  --txt:#eceef2;
+  --muted:#8b8f9c;
+  --amber:#f5a623;
+  --amber-dim:#b97e15;
+  --green:#3ecf8e;
+  --red:#ff6b6b;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--txt);
+  font-family:'Archivo',sans-serif;
+  font-size:14px;
+  background-image:
+    radial-gradient(1200px 600px at 80% -10%, rgba(245,166,35,.07), transparent 60%),
+    radial-gradient(900px 500px at -10% 100%, rgba(62,207,142,.05), transparent 60%);
+}
+header{
+  display:flex;align-items:center;gap:14px;
+  padding:18px 26px;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:rgba(16,17,20,.92);backdrop-filter:blur(8px);z-index:50;
+}
+.logo-mark{
+  width:38px;height:38px;border-radius:10px;flex:none;
+  background:#fff;
+  display:grid;place-items:center;
+}
+header h1{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;letter-spacing:.3px}
+header h1 span{color:var(--amber)}
+header .sub{color:var(--muted);font-size:12px;margin-top:2px}
+.key-wrap{margin-left:auto;display:flex;gap:8px;align-items:center}
+.key-wrap input{
+  width:280px;max-width:38vw;background:var(--panel2);border:1px solid var(--line);
+  color:var(--txt);padding:9px 12px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:12px;
+}
+.key-wrap input:focus{outline:none;border-color:var(--amber)}
+.key-dot{width:9px;height:9px;border-radius:50%;background:var(--red);flex:none}
+.key-dot.ok{background:var(--green)}
+
+main{display:grid;grid-template-columns:430px 1fr;gap:0;min-height:calc(100vh - 75px)}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+
+/* ---------- LEFT PANEL ---------- */
+.left{
+  border-right:1px solid var(--line);padding:24px 26px 60px;
+  overflow-y:auto;max-height:calc(100vh - 75px);
+}
+@media(max-width:980px){.left{max-height:none;border-right:none;border-bottom:1px solid var(--line)}}
+.sec{margin-bottom:26px}
+.sec-title{
+  font-family:'Syne';font-weight:700;font-size:12px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--amber);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.sec-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.uploads{display:grid;grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));gap:10px}
+.drop{
+  border:1.5px dashed var(--line);border-radius:var(--radius);
+  padding:14px;text-align:center;cursor:pointer;transition:.2s;
+  background:var(--panel);position:relative;min-height:130px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+}
+.drop:hover{border-color:var(--amber)}
+.drop.has-img{border-style:solid;border-color:var(--green)}
+.drop img{max-width:100%;max-height:90px;border-radius:8px;background:#fff}
+.drop .d-label{font-size:11px;color:var(--muted);line-height:1.3}
+.drop .d-icon{font-size:22px}
+.drop input{display:none}
+
+/* Clear button overlay */
+.clear-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255,107,107,0.85);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  z-index: 10;
+  transition: background 0.15s, transform 0.1s;
+}
+.clear-btn:hover {
+  background: #ff4a4a;
+  transform: scale(1.1);
+}
+.drop.has-img .clear-btn {
+  display: flex;
+}
+
+/* Product gallery for multiple product images */
+.prod-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.prod-thumb {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border: 1.5px solid var(--green);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.prod-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.prod-thumb .clear-btn {
+  display: flex;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+}
+
+label.f-label{display:block;font-size:11.5px;color:var(--muted);margin:0 0 5px;letter-spacing:.4px}
+.field{margin-bottom:13px}
+input[type=text],input[type=number],select,textarea{
+  width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  padding:10px 12px;border-radius:9px;font-family:'Archivo';font-size:13.5px;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--amber)}
+textarea{resize:vertical;min-height:60px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{
+  border:1px solid var(--line);background:var(--panel2);color:var(--muted);
+  padding:6px 11px;border-radius:99px;font-size:12px;cursor:pointer;transition:.15s;user-select:none;
+}
+.chip.on{background:rgba(245,166,35,.14);border-color:var(--amber);color:var(--amber)}
+.chip .chip-n{
+  display:none;width:48px;margin-left:8px;padding:4px 6px;
+  border:1px solid var(--amber);border-radius:6px;background:#26201294;
+  color:var(--amber);font-size:13px;font-weight:700;text-align:center;
+  -moz-appearance:textfield;appearance:textfield;
+}
+.chip .chip-n::-webkit-inner-spin-button,
+.chip .chip-n::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.chip .chip-n::placeholder{color:#8a6a2a;font-weight:400}
+.chip.on .chip-n{display:inline-block}
+
+/* ---------- RIGHT PANEL ---------- */
+.right{padding:24px 28px 80px;overflow-y:auto;max-height:calc(100vh - 75px)}
+@media(max-width:980px){.right{max-height:none}}
+.types{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px;margin-bottom:22px}
+.tcard{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 15px;cursor:pointer;transition:.15s;position:relative;
+}
+.tcard:hover{border-color:#3a3e4a}
+.tcard.on{border-color:var(--amber);background:linear-gradient(180deg,rgba(245,166,35,.08),var(--panel))}
+.tcard .num{
+  font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted);letter-spacing:1px;
+}
+.tcard.on .num{color:var(--amber)}
+.tcard h3{font-size:14px;font-weight:600;margin:5px 0 4px;font-family:'Syne'}
+.tcard p{font-size:11.5px;color:var(--muted);line-height:1.45}
+.tcard .tick{
+  position:absolute;top:11px;right:12px;width:17px;height:17px;border-radius:50%;
+  border:1.5px solid var(--line);display:grid;place-items:center;font-size:10px;color:#16130a;
+}
+.tcard.on .tick{background:var(--amber);border-color:var(--amber)}
+
+.gen-bar{
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:24px;
+}
+.btn{
+  font-family:'Syne';font-weight:700;font-size:13.5px;letter-spacing:.5px;
+  background:var(--amber);color:#16130a;border:none;border-radius:10px;
+  padding:12px 26px;cursor:pointer;transition:.15s;
+}
+.btn:hover{background:#ffc14d}
+.btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.gen-bar select{width:auto;padding:9px 32px 9px 12px}
+.gen-bar .hint{color:var(--muted);font-size:11.5px;flex:1;min-width:160px}
+
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.rcard{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.rcard .r-img{
+  aspect-ratio:1/1;background:var(--panel2);display:grid;place-items:center;position:relative;
+}
+.rcard .r-img img{width:100%;height:100%;object-fit:contain;background:#fff}
+.spinner{
+  width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--amber);
+  border-radius:50%;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.r-foot{display:flex;align-items:center;gap:8px;padding:11px 13px;border-top:1px solid var(--line)}
+.r-foot .r-name{font-size:12.5px;font-weight:600;flex:1}
+.r-foot .mini{
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  font-size:11.5px;padding:6px 11px;border-radius:8px;cursor:pointer;
+}
+.r-foot .mini:hover{border-color:var(--amber);color:var(--amber)}
+.r-status{font-size:11px;color:var(--muted);padding:0 13px 11px}
+.r-status.err{color:var(--red)}
+.empty{
+  border:1.5px dashed var(--line);border-radius:var(--radius);padding:48px 20px;
+  text-align:center;color:var(--muted);font-size:13px;grid-column:1/-1;
+}
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+  background:#23161a;border:1px solid var(--red);color:#ffb3b3;
+  padding:12px 20px;border-radius:10px;font-size:13px;z-index:99;display:none;max-width:90vw;
+}
+
+/* ---------- THEME ENHANCEMENTS ---------- */
+::selection{background:rgba(245,166,35,.3)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#2a2d36;border-radius:99px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:#454a58}
+
+.logo-mark{box-shadow:0 4px 14px rgba(0,0,0,.4)}
+header{box-shadow:0 1px 0 rgba(245,166,35,.07)}
+
+.drop{transition:.2s}
+.drop:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.chip:hover{border-color:#3a3e4a;color:var(--txt)}
+
+.tcard{transition:.2s}
+.tcard:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.35)}
+.tcard.on{box-shadow:0 6px 18px rgba(245,166,35,.10)}
+
+.btn{background:linear-gradient(135deg,var(--amber),#ff7847);box-shadow:0 4px 18px rgba(245,166,35,.25);transition:.18s}
+.btn:hover{background:linear-gradient(135deg,#ffc14d,#ff8c5e);transform:translateY(-1px);box-shadow:0 6px 24px rgba(245,166,35,.38)}
+.btn:disabled{background:var(--line);box-shadow:none;transform:none}
+
+.rcard{animation:cardIn .35s ease both;transition:.2s}
+.rcard:hover{border-color:#3a3e4a;box-shadow:0 10px 28px rgba(0,0,0,.4)}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.rcard .r-img img{cursor:zoom-in;transition:transform .25s}
+.rcard .r-img:hover img{transform:scale(1.025)}
+
+/* ---------- MULTI-SELECT DOWNLOAD ---------- */
+.r-pick{
+  position:absolute;top:10px;left:10px;z-index:5;width:20px;height:20px;
+  accent-color:var(--amber);cursor:pointer;
+}
+.dl-bar{
+  position:fixed;bottom:22px;right:24px;display:none;align-items:center;gap:10px;
+  background:var(--panel);border:1px solid var(--amber);border-radius:12px;
+  padding:10px 16px;z-index:120;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:12.5px;
+}
+.dl-bar.show{display:flex}
+.dl-bar .mini{
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  font-size:11.5px;padding:6px 11px;border-radius:8px;cursor:pointer;
+}
+.dl-bar .mini:hover{border-color:var(--amber);color:var(--amber)}
+
+/* ---------- PREVIEW MODAL ---------- */
+.modal{
+  position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+  background:rgba(8,9,12,.86);backdrop-filter:blur(12px);
+}
+.modal.open{display:flex;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.m-stage{max-width:min(88vw,940px);max-height:76vh;display:grid;place-items:center}
+.m-stage img{
+  max-width:min(88vw,940px);max-height:76vh;border-radius:16px;background:#fff;
+  box-shadow:0 30px 90px rgba(0,0,0,.65);cursor:zoom-in;transition:transform .25s ease;
+}
+.m-stage img.zoomed{transform:scale(1.7);cursor:zoom-out}
+.m-nav{
+  position:fixed;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;
+  border:1px solid var(--line);background:rgba(23,24,29,.85);color:var(--txt);
+  font-size:22px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:.15s;z-index:201;
+}
+.m-nav:hover{border-color:var(--amber);color:var(--amber)}
+.m-nav:disabled{opacity:.3;cursor:default}
+#mPrev{left:26px}
+#mNext{right:26px}
+.m-top{position:fixed;top:16px;right:20px;display:flex;gap:10px;z-index:201}
+.m-btn{
+  font-family:'Archivo';font-size:13px;padding:9px 16px;border-radius:10px;
+  border:1px solid var(--line);background:rgba(23,24,29,.85);color:var(--txt);cursor:pointer;transition:.15s;
+}
+.m-btn:hover{border-color:var(--amber);color:var(--amber)}
+.m-cap{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:12px;background:rgba(23,24,29,.85);
+  border:1px solid var(--line);border-radius:99px;padding:9px 18px;font-size:13px;z-index:201;
+}
+.m-cap .m-count{color:var(--muted);font-family:'JetBrains Mono';font-size:11.5px}
+
+/* ---------- DESIGN PASS ---------- */
+::placeholder{color:#565b68}
+input[type=text]:hover,input[type=number]:hover,select:hover,textarea:hover{border-color:#3a3e4a}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(245,166,35,.13)}
+
+.left .sec{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 16px 14px;
+}
+.left .sec .drop{background:var(--panel2)}
+
+.sec-title::before{
+  content:"";width:6px;height:6px;border-radius:50%;flex:none;
+  background:var(--amber);box-shadow:0 0 8px rgba(245,166,35,.8);
+}
+
+.chip{transition:.18s}
+.chip:hover{transform:translateY(-1px)}
+.chip.on{box-shadow:0 2px 10px rgba(245,166,35,.18)}
+
+.tcard .tick{transition:.18s}
+.tcard.on .tick{box-shadow:0 0 10px rgba(245,166,35,.45)}
+
+.right .gen-bar{
+  position:sticky;top:0;z-index:40;
+  background:rgba(23,24,29,.92);backdrop-filter:blur(8px);
+}
+
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px}
+.empty::before{content:"🖼️";font-size:30px;opacity:.55}
+
+.r-foot .mini{transition:.15s}
+.r-foot .mini:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0);box-shadow:0 2px 10px rgba(245,166,35,.3)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark"><svg viewBox="0 0 100 100" width="24" height="24" xmlns="http://www.w3.org/2000/svg"><path fill="#36343A" d="M10 30a20 20 0 0 1 20-20h12a6 6 0 0 1 6 6v22a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6z"/><path fill="#38719F" d="M10 56a6 6 0 0 1 6-6h26a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6L18 92c-4 1.7-8-1-8-6z"/><path fill="#EF4B3E" d="M58 16a6 6 0 0 1 6-6h20a6 6 0 0 1 6 7l-8 58a8 8 0 0 1-8 7H64a6 6 0 0 1-6-6z"/></svg></div>
+  <div>
+    <h1>SnapTo<span>Shelf</span></h1>
+    <div class="sub">Phone photo in → marketplace-ready listing out · 20 minutes per SKU</div>
+  </div>
+  <div class="key-wrap">
+    <span class="key-dot" id="keyDot"></span>
+    <input type="password" id="apiKey" placeholder="sk-... OpenAI API key" autocomplete="off"/>
+  </div>
+</header>
+
+<main>
+<!-- ============ LEFT: INPUTS ============ -->
+<div class="left">
+
+  <div class="sec">
+    <div class="sec-title">1 · Assets</div>
+    <div class="uploads">
+      <div class="drop" id="dropProduct">
+        <input type="file" accept="image/*" id="fileProduct" multiple/>
+        <span class="d-icon">🎒</span>
+        <span class="d-label">Product photos<br><b style="color:var(--txt)">Upload multiple angles</b></span>
+      </div>
+      <div class="drop" id="dropLogo">
+        <button class="clear-btn" id="clearLogo" title="Remove">&times;</button>
+        <input type="file" accept="image/*" id="fileLogo"/>
+        <span class="d-icon">®</span>
+        <span class="d-label">Brand logo<br><b style="color:var(--txt)">PNG preferred</b></span>
+      </div>
+      <div class="drop" id="dropModel">
+        <button class="clear-btn" id="clearModel" title="Remove">&times;</button>
+        <input type="file" accept="image/*" id="fileModel"/>
+        <span class="d-icon">👤</span>
+        <span class="d-label">Model/Lifestyle<br><b style="color:var(--txt)">pose/bg reference</b></span>
+      </div>
+      <div class="drop" id="dropStyle">
+        <button class="clear-btn" id="clearStyle" title="Remove">&times;</button>
+        <input type="file" accept="image/*" id="fileStyle"/>
+        <span class="d-icon">🎨</span>
+        <span class="d-label">Style reference<br><b style="color:var(--txt)">approved PDP design</b></span>
+      </div>
+    </div>
+    <div class="prod-gallery" id="prodGallery"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">💡 Upload one or more angles of your product (recommending white background). You can also upload a logo, style reference, or a model photo to influence the background/pose of lifestyle shots.</div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">2 · Product Info</div>
+    <div class="row2">
+      <div class="field"><label class="f-label">Brand name</label><input type="text" id="brand"/></div>
+      <div class="field"><label class="f-label">Product / range name</label><input type="text" id="pname"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label class="f-label">Bag type</label>
+        <select id="bagType">
+          <option>School Backpack</option><option>Laptop Backpack</option><option>Casual Backpack</option>
+          <option>College Backpack</option><option>Kids Backpack</option><option>Overnighter</option><option>Trolley Bag</option><option>Duffel Bag</option>
+        </select>
+      </div>
+      <div class="field"><label class="f-label">Colour / print</label><input type="text" id="colour"/></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label class="f-label">Height (in)</label><input type="number" id="dimH" step="0.5"/></div>
+      <div class="field"><label class="f-label">Width (in)</label><input type="number" id="dimW" step="0.5"/></div>
+      <div class="field"><label class="f-label">Depth (in)</label><input type="number" id="dimD" step="0.5"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label class="f-label">Capacity (litres)</label><input type="number" id="capacity" step="0.5"/></div>
+      <div class="field"><label class="f-label">Age group</label><input type="text" id="ageGroup"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label class="f-label">Model (lifestyle shot)</label>
+        <select id="model"><option>Girl child</option><option>Boy child</option><option>Female adult</option><option>Male adult</option><option>No model</option></select>
+      </div>
+      <div class="field"><label class="f-label">Background / Graphic Theme</label><input type="text" id="theme"/></div>
+    </div>
+    <div class="field"><label class="f-label">Lifestyle background location</label><input type="text" id="bgLoc"/></div>
+    <div class="field"><label class="f-label">Model appearance (optional — describe the person)</label><textarea id="modelDesc"></textarea></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">3 · Comfort Features</div>
+    <div class="chips" id="comfortChips"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">4 · Space Story (Compartments)</div>
+    <div class="chips" id="spaceChips"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">5 · What Fits In</div>
+    <div class="chips" id="fitsChips"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">6 · Additional Features</div>
+    <div class="field"><label class="f-label">"Everything You Need" badges (comma separated, first 4 used)</label><input type="text" id="needItems"/></div>
+    <div class="field"><label class="f-label">Other features (used in Tech Spec callouts etc.)</label><textarea id="extras"></textarea></div>
+  </div>
+
+</div>
+
+<!-- ============ RIGHT: TYPES + RESULTS ============ -->
+<div class="right">
+  <div class="sec-title" style="margin-bottom:14px">Select PDP images to generate</div>
+  <div class="types" id="types"></div>
+
+  <div class="gen-bar">
+    <button class="btn" id="genBtn">⚡ Generate Selected</button>
+    <select id="engine">
+      <option value="gemini:gemini-2.5-flash-image" selected>🍌 Nano Banana · free tier</option>
+      <option value="gemini:gemini-3.1-flash-image-preview">🍌 Nano Banana 2 · paid, sharper</option>
+      <option value="gemini:gemini-3-pro-image-preview">🍌 Nano Banana Pro · paid, best text</option>
+      <option value="openai:gpt-image-1">OpenAI gpt-image-1 · paid</option>
+    </select>
+    <select id="quality">
+      <option value="medium" selected>Quality: Medium</option>
+      <option value="high">Quality: High (slow, costly)</option>
+      <option value="low">Quality: Low (fast test)</option>
+    </select>
+    <select id="size">
+      <option value="1024x1024" selected>1:1 (square)</option>
+      <option value="1024x1536">Portrait (2:3)</option>
+    </select>
+    <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none">
+      <input type="checkbox" id="cleanMode" style="accent-color:var(--amber);width:15px;height:15px"/>
+      No pointer / connector lines (keep labels)
+    </label>
+    <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none">
+      <input type="checkbox" id="overlayMode" checked style="accent-color:var(--amber);width:15px;height:15px"/>
+      App-drawn labels (perfect text, zero lines)
+    </label>
+    <div class="hint" id="costHint">Select images, fill the form, paste your API key, then generate.</div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="empty">Generated images will appear here.<br>Download each as PNG once ready.</div>
+  </div>
+</div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<div class="dl-bar" id="dlBar">
+  <b id="dlCount">0 selected</b>
+  <button class="mini" id="dlSelAll">Select all</button>
+  <button class="mini" id="dlAll">⬇ Download selected</button>
+  <button class="mini" id="dlClear">✕ Clear</button>
+</div>
+
+<div class="modal" id="modal" aria-hidden="true">
+  <div class="m-top">
+    <button class="m-btn" id="mDl">⬇ Download PNG</button>
+    <button class="m-btn" id="mClose">✕ Close</button>
+  </div>
+  <button class="m-nav" id="mPrev" title="Previous">‹</button>
+  <div class="m-stage"><img id="mImg" alt="Preview"/></div>
+  <button class="m-nav" id="mNext" title="Next">›</button>
+  <div class="m-cap"><b id="mName"></b><span class="m-count" id="mCount"></span></div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const COMFORT = ["Adjustable Shoulder Straps","Wide Padded Shoulder Straps","Bartacked Stitch on Load Points","Premium Quality Zippers","Breathable Back Panel","Super Soft Cushion Handle","Bottom Rib Pad","Durable Pullers","Lightweight","Premium Vegan Fabric"];
+const SPACE = ["Main Compartment","Front Pocket","Bottle Pocket","Side Zip Pocket","Easy Organiser","Premium Organiser","Padded Laptop Sleeve","Document Sleeve","Small Pocket"];
+const FITS = ["Books","Notebooks","Pencil Case","Lunch Box","Water Bottle","Umbrella","Folder","Wallet","Laptop","Tablet","Charger","Headphones","Shirt / Clothes","Power Bank"];
+
+const TYPES = [
+ {id:"white",  name:"White Background",        d:"Clean front-angle shot on pure white — marketplace main image.", def:false},
+ {id:"hero",   name:"AI Hero Shot",            d:"Larger-than-life themed scene ", def:true},
+ {id:"life",   name:"AI Lifestyle Image",      d:"Model wearing the bag at your chosen location, correct scale.", def:true},
+ {id:"comfort",name:"Comfort That Carries Well",d:"Back view with comfort feature callouts.", def:true},
+ {id:"space",  name:"Space Story",             d:"Open/exploded view with compartment callouts.", def:true},
+ {id:"need",   name:"Everything You Need",     d:"Feature badges around the bag", def:false},
+ {id:"dims",   name:"Dimension & Capacity",    d:"Front + side view, measurement arrows, litres badge.", def:true},
+ {id:"fits",   name:"What Fits In?",           d:"Flat-lay grid of everything the bag holds.", def:false},
+ {id:"tech",   name:"Tech Spec / Engineered",  d:"Dark premium infographic — glowing callouts, dimension arrows, HUD capacity badge.", def:false},
+ {id:"open",   name:"Dark Open-Compartment",   d:"Spotlight scene, all compartments fanned open, white callouts, mirror reflection.", def:false},
+];
+
+/* ================= UI BUILD ================= */
+function buildChips(el, arr, withCount){
+  el.innerHTML = arr.map(t=>`<span class="chip" data-v="${t}">${t}${withCount?'<input class="chip-n" type="number" min="2" max="9" placeholder="Qty" title="How many? e.g. 2 = the bag has 2 of these (optional)"/>':""}</span>`).join("");
+  el.addEventListener("click",e=>{
+    if(e.target.classList.contains("chip-n")) return;
+    const c=e.target.closest(".chip");
+    if(c){
+      c.classList.toggle("on");
+      const n=c.querySelector(".chip-n");
+      if(n && !c.classList.contains("on")) n.value="";
+    }
+  });
+}
+buildChips(document.getElementById("comfortChips"),COMFORT);
+buildChips(document.getElementById("spaceChips"),SPACE,true);
+buildChips(document.getElementById("fitsChips"),FITS);
+
+const typesEl = document.getElementById("types");
+typesEl.innerHTML = TYPES.map((t,i)=>`
+  <div class="tcard ${t.def?'on':''}" data-id="${t.id}">
+    <div class="num">IMAGE ${String(i+1).padStart(2,"0")}</div>
+    <h3>${t.name}</h3><p>${t.d}</p>
+    <div class="tick">✓</div>
+  </div>`).join("");
+typesEl.addEventListener("click",e=>{
+  const c = e.target.closest(".tcard"); if(c){c.classList.toggle("on"); updateHint();}
+});
+
+function selectedTypes(){ return [...document.querySelectorAll(".tcard.on")].map(c=>c.dataset.id); }
+/* approx ₹ per image (USD→INR ≈ 85) */
+const PRICE = {
+  "gemini:gemini-2.5-flash-image": q=>3,
+  "gemini:gemini-3.1-flash-image-preview": q=>6,
+  "gemini:gemini-3-pro-image-preview": q=>12,
+  "openai:gpt-image-1": q=>({low:1,medium:3.5,high:14}[q]||3.5)
+};
+function updateHint(){
+  const n = selectedTypes().length;
+  if(!n){ document.getElementById("costHint").textContent = "Select at least one image type."; return; }
+  const engine=document.getElementById("engine").value, quality=document.getElementById("quality").value;
+  const per=PRICE[engine]?PRICE[engine](quality):null;
+  const cost=per?` · est. cost ≈ ₹${Math.round(n*per*10)/10} (₹${per}/image)`:"";
+  document.getElementById("costHint").textContent = `${n} image${n>1?'s':''} selected${cost} — generated one by one so you can watch progress.`;
+}
+document.getElementById("engine").addEventListener("change",updateHint);
+document.getElementById("quality").addEventListener("change",updateHint);
+updateHint();
+
+/* uploads */
+let productImgs = [];
+let logoImg = null;
+let modelImg = null;
+let styleImg = null;
+
+function wireSingleDrop(dropId, fileId, setter, clearBtnId) {
+  const drop = document.getElementById(dropId);
+  const inp = document.getElementById(fileId);
+  const clearBtn = document.getElementById(clearBtnId);
+  const icon = drop.querySelector(".d-icon");
+  const label = drop.querySelector(".d-label");
+  const origIconDisplay = icon.style.display || "block";
+  const origLabelHTML = label.innerHTML;
+
+  drop.addEventListener("click", (e) => {
+    if (e.target !== inp && e.target !== clearBtn && !clearBtn.contains(e.target)) {
+      inp.click();
+    }
+  });
+
+  inp.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+
+  inp.addEventListener("change", () => {
+    const f = inp.files[0];
+    if (!f) return;
+    setter(f);
+    const url = URL.createObjectURL(f);
+    drop.classList.add("has-img");
+    icon.style.display = "none";
+    label.innerHTML = `<img src="${url}"/><br>${f.name.slice(0, 20)}`;
+  });
+
+  clearBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setter(null);
+    inp.value = "";
+    drop.classList.remove("has-img");
+    icon.style.display = origIconDisplay;
+    label.innerHTML = origLabelHTML;
+  });
+}
+
+wireSingleDrop("dropLogo", "fileLogo", f => logoImg = f, "clearLogo");
+wireSingleDrop("dropModel", "fileModel", f => modelImg = f, "clearModel");
+wireSingleDrop("dropStyle", "fileStyle", f => styleImg = f, "clearStyle");
+
+/* Multiple product photos logic */
+const fileProduct = document.getElementById("fileProduct");
+const dropProduct = document.getElementById("dropProduct");
+const prodGallery = document.getElementById("prodGallery");
+
+dropProduct.addEventListener("click", (e) => {
+  if (e.target !== fileProduct) {
+    fileProduct.click();
+  }
+});
+
+fileProduct.addEventListener("click", (e) => {
+  e.stopPropagation();
+});
+
+fileProduct.addEventListener("change", () => {
+  const files = fileProduct.files;
+  if (!files || files.length === 0) return;
+  for (let i = 0; i < files.length; i++) {
+    productImgs.push(files[i]);
+  }
+  fileProduct.value = "";
+  renderProductGallery();
+});
+
+function renderProductGallery() {
+  prodGallery.innerHTML = "";
+  if (productImgs.length > 0) {
+    dropProduct.classList.add("has-img");
+    dropProduct.querySelector(".d-label").innerHTML = `Product photos<br><b style="color:var(--green)">${productImgs.length} images</b>`;
+    dropProduct.querySelector(".d-icon").style.display = "none";
+  } else {
+    dropProduct.classList.remove("has-img");
+    dropProduct.querySelector(".d-label").innerHTML = `Product photos<br><b style="color:var(--txt)">Upload multiple angles</b>`;
+    dropProduct.querySelector(".d-icon").style.display = "block";
+  }
+
+  productImgs.forEach((f, idx) => {
+    const url = URL.createObjectURL(f);
+    const thumb = document.createElement("div");
+    thumb.className = "prod-thumb";
+    thumb.innerHTML = `
+      <img src="${url}" />
+      <button class="clear-btn" title="Remove" style="display: flex;">&times;</button>
+    `;
+    thumb.querySelector(".clear-btn").addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      productImgs.splice(idx, 1);
+      renderProductGallery();
+    });
+    prodGallery.appendChild(thumb);
+  });
+}
+
+/* api key dot — Gemini keys start with AIza or AQ. ; OpenAI keys start with sk- */
+const keyInp=document.getElementById("apiKey"), keyDot=document.getElementById("keyDot");
+function isGeminiKey(v){ return v.startsWith("AIza")||v.startsWith("AQ.")||(!v.startsWith("sk-")&&v.length>20); }
+function keyOk(){ const v=keyInp.value.trim(); return v.length>20&&(isGeminiKey(v)||v.startsWith("sk-")); }
+keyInp.addEventListener("input",()=>{
+  localStorage.setItem("pdp_key", keyInp.value.trim());
+  keyDot.classList.toggle("ok",keyOk());
+});
+keyInp.placeholder="API key (optional — server key used if empty)";
+keyInp.value = localStorage.getItem("pdp_key")||"";
+keyDot.classList.toggle("ok",keyOk());
+
+/* ================= PROMPTS ================= */
+function chips(el){
+  return [...document.querySelectorAll(`#${el} .chip.on`)].map(c=>{
+    const base=c.dataset.v;
+    const nInp=c.querySelector(".chip-n");
+    const n=nInp?parseInt(nInp.value,10):NaN;
+    if(n>=2){ return `${n} ${/s$/i.test(base)?base:base+"s"}`; }
+    return base;
+  });
+}
+function info(){
+  const H=document.getElementById("dimH").value, W=document.getElementById("dimW").value, D=document.getElementById("dimD").value;
+  const cm = v=>v?(v*2.54).toFixed(1):"";
+  return {
+    brand:document.getElementById("brand").value,
+    pname:document.getElementById("pname").value,
+    bagType:document.getElementById("bagType").value,
+    colour:document.getElementById("colour").value,
+    H,W,D, Hcm:cm(H), Wcm:cm(W), Dcm:cm(D),
+    cap:document.getElementById("capacity").value,
+    age:document.getElementById("ageGroup").value,
+    model:document.getElementById("model").value,
+    bg:document.getElementById("bgLoc").value,
+    theme:document.getElementById("theme").value,
+    comfort:chips("comfortChips"), space:chips("spaceChips"), fits:chips("fitsChips"),
+    extras:document.getElementById("extras").value,
+    needItems:document.getElementById("needItems").value,
+    modelDesc:document.getElementById("modelDesc").value
+  };
+}
+
+const BASE = i => `ABSOLUTE PRODUCT FIDELITY — THIS IS A COMPOSITING TASK, NOT A DESIGN TASK: the bag in the output must be THE IDENTICAL physical ${i.bagType.toLowerCase()} shown in the attached product reference photos, as if those photos were cut out and re-lit in a new scene. Match ONE-TO-ONE: overall silhouette and proportions, every panel and seam, the exact number, size and position of pockets and zippers, zipper pullers, straps, handle shape, stitching, materials and textures, the brand label/badge in its exact position, colour [${i.colour||"exactly as shown in the photos"}] and any print pattern. Pay special attention to ACCENT COLOURS: any contrast-coloured zippers, piping, trims, linings or panels visible in the reference photos MUST appear in the same colour, same position and same brightness — never turn an accent-coloured part black or grey, even in dark or moody lighting. Do NOT invent, redesign, recolour, simplify, add or remove ANY part of the bag — if a detail is not visible in the reference photos, keep it plain and neutral rather than inventing one. Before finishing, verify the generated bag would be recognised as the same product as the reference photos by its owner.${i.brand?` Brand: ${i.brand}${i.pname?` "${i.pname}"`:""}.`:""} Professional Amazon/Flipkart PDP listing image, high resolution, crisp studio quality. Every word of text must be spelled EXACTLY as specified below in clean modern sans-serif type — no extra text, no gibberish, no invented words. PERMANENT DESIGN RULE — NO POINTING: never draw a callout line, leader line, connector stroke, stem, tick, bracket or dot that points at, reaches towards, or touches the product. Every label, card and badge is a fully detached, closed element floating with plain clean background between it and the product. The ONLY exception is a measurement arrow if one is explicitly specified later in this brief — nothing else may form a line.`;
+
+const PROMPTS = {
+ white: i=>`${BASE(i)} Render ONLY the bag, front three-quarter angle, perfectly centred on a pure white #FFFFFF background with a soft natural contact shadow under the base. No text, no props, no badges, no logo overlays. Clean marketplace main-image.`,
+ hero: i=>`${BASE(i)} Larger-than-life cinematic HERO SHOT: the bag stands oversized like a monument on a podium inside ${i.theme?`an imaginative 3D world inspired by this theme: ${i.theme} (the theme phrase is creative direction for the scenery ONLY — NEVER write these theme words anywhere in the image)`:`a premium imaginative 3D world that matches the bag's own design and colours`}${i.age?`, designed to excite children aged ${i.age}`:""}. Rich depth, dramatic rim lighting, atmosphere particles. ${i.pname?`The environment visualises the spirit of the product range ${i.pname} (scenery inspiration only — never written as text).`:""} Do NOT place any logo overlay, brand wordmark, watermark, label or text anywhere in the image — only the bag's own printed branding on the product itself. ZERO text in the image.`,
+ life: i=>`${BASE(i)} Photorealistic LIFESTYLE photo: a ${i.model==="No model"?"natural scene with the bag placed believably":"happy "+i.model.toLowerCase()+" wearing the bag on BOTH shoulders, looking back over the shoulder and smiling at camera"}${i.age?` (clearly age ${i.age})`:""}, at ${i.bg||"a bright, tidy everyday Indian setting"}.${i.model!=="No model"&&i.modelDesc?` MODEL APPEARANCE: ${i.modelDesc}. The person must be an entirely fictional, generic individual matching this description — not a real or recognisable person.`:""} CRITICAL SCALE: the bag must be ${i.H||"correctly"} ${i.H?"inches tall":""} relative to the model's torso — not too big, not too small. Natural window light, shallow depth of field. ${i.age?`A small rounded purple badge in the top-left corner reads exactly "AGE: ${i.age}".`:`No badges, no overlays and no text anywhere in the image.`}`,
+ comfort: i=>{
+   const cardPart = i.comfort.length
+     ? `EXACTLY ${i.comfort.length} small white rounded feature cards arranged in two neat vertical columns — one column down the far LEFT edge of the image, one down the far RIGHT edge, half the cards in each — each card containing a tiny line icon of the feature on top and the feature name below in small dark text, one card per feature, each appearing exactly once, spelled letter-perfect, no extra cards: ${i.comfort.join(", ")}. These are floating legend cards in a card-grid design, NOT a callout diagram: each card is a fully closed shape, and a wide band of plain empty background separates the columns from the bag — absolutely nothing is drawn in that gap. FINAL CHECK: this image contains ZERO lines anywhere — if any stroke connects or reaches from a card towards the bag, the image is WRONG.`
+     : `Do NOT draw any callout cards, feature labels or icons — only the title and the bag, with clean empty space around it.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble: "Comfort That" in dark text and "Carries Well" with the second word in an accent colour. Below, the BACK VIEW of the bag perfectly centred showing back panel and straps. ${cardPart} Background: soft pastel tone matching the bag's main colour${i.theme?` with subtle 3D ${i.theme} elements at the bottom`:""}. Premium kids-catalogue style.`;
+ },
+ space: i=>{
+   const cardPart = i.space.length
+     ? `EXACTLY ${i.space.length} white rounded feature cards arranged in two neat vertical columns — one column down the far LEFT edge of the image, one down the far RIGHT edge, half the cards in each — each with a tiny icon and label, one card per feature, each appearing exactly once, spelled letter-perfect, no extra cards: ${i.space.join(", ")}. These are floating legend cards in a card-grid design, NOT a callout diagram: each card is a fully closed shape, and a wide band of plain empty background separates the columns from the bag — absolutely nothing is drawn in that gap. FINAL CHECK: this image contains ZERO lines anywhere — if any stroke connects or reaches from a card towards the bag, the image is WRONG.`
+     : `Do NOT draw any callout cards, labels or icons — only the title, subtitle and the bag, with clean empty space around it.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble: "Space Story" with the second word in an accent colour, and a small subtitle below: "Every Pocket, A New Adventure!". The bag shown fully CLOSED — every zipper zipped shut, no compartment or pocket open, exactly as it appears in the reference photos — at three-quarter angle, centred, undistorted. Do NOT add any sticker, patch, badge, charm or graphic onto the bag that is not visible in the reference photos. ${cardPart} Background: soft pastel matching the bag colour${i.theme?`, subtle 3D ${i.theme} elements`:""}. Same design language as a premium school-bag listing.`;
+ },
+ need: i=>{
+   const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
+   const corners = ["top-LEFT corner","top-RIGHT corner","bottom-LEFT corner","bottom-RIGHT corner"];
+   const badgePart = list.length
+     ? `Exactly ${list.length} white rounded badge card${list.length>1?"s":""} arranged in a single neat horizontal row along the BOTTOM of the image, beneath the bag, each with a small line icon on top and its label below in small dark text, in this order: ${list.map(b=>`"${b}"`).join(", ")}. Each badge appears exactly once, spelled letter-perfect, no other badges anywhere. The bag stands completely alone above with nothing beside it — the badges exist ONLY in the bottom row, like an icon legend strip.`
+     : `Do NOT draw any badge cards, feature labels, icons or callouts — only the title and the bag, with clean empty space around the bag.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a decorative white rounded outline bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view. ${badgePart} Soft pastel background matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}. No other text.`;
+ },
+ dims: i=>{
+   const m=[];
+   if(i.H) m.push(`Along the far left edge of the front view a thin dark vertical measurement line with small arrowheads at both ends; beside it, written HORIZONTALLY (normal upright reading direction, NOT rotated) in three stacked lines: "HEIGHT", "${i.H} INCHES", "(${i.Hcm} cm)".`);
+   if(i.W) m.push(`Below the front view a thin horizontal arrow line spanning its width, labelled underneath in three stacked lines: "WIDTH", "${i.W} INCHES", "(${i.Wcm} cm)".`);
+   if(i.D) m.push(`Below the side view a thin horizontal arrow line spanning its depth, labelled underneath in three stacked lines: "DEPTH", "${i.D} INCHES", "(${i.Dcm} cm)".`);
+   if(i.cap) m.push(`In the upper area between the two bags, a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it.`);
+   const measurePart = m.length?m.join(" ")+" Show ONLY these measurements — do not invent any other number.":"Do NOT draw any measurement lines, arrows, dimension numbers or capacity badge — only the two bag views.";
+   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background. Title at top centre in bold dark modern sans-serif: "Designed for Everyday Use", with a lighter grey subtitle below it: "Lightweight. Durable. Reliable.". Show the SAME bag TWICE, standing side by side at equal size: on the LEFT the full FRONT view, on the RIGHT the SIDE profile view of the identical bag. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
+ },
+ fits: i=>{
+   const panelPart = i.fits.length
+     ? `On the RIGHT half a large white rounded panel titled "Fits All This" containing a neat grid of small photorealistic item thumbnails, each labelled below in tiny text. STRICT ITEM LIST: the grid contains EXACTLY ${i.fits.length} tiles, one per item, in this order: ${i.fits.join(", ")}. NO DUPLICATION: each item appears EXACTLY ONCE — never repeat an item, a tile or a label anywhere in the image, even with different wording or a different thumbnail of the same object. Spell every label letter-perfect. Do NOT add any extra item, extra tile, or an "& More" tile — nothing beyond this list.`
+     : `Do NOT draw any items panel, item thumbnails or item labels — only the title, subtitle and the bag, with clean empty space on the right half.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre in a white rounded outline bubble with the EXACT two-word phrase "CARRY MORE" ("CARRY" dark, "MORE" in accent colour), each word once, nothing repeated${i.fits.length?`, and a subtitle below it reading exactly "Spacious enough to fit everything your child needs for school!"`:" and no subtitle"}. Bag front view on the LEFT half. ${panelPart} Soft pastel background matching the bag colour${i.theme?` with subtle ${i.theme} elements`:""}.`;
+ },
+ open: i=>{
+   const callouts = i.space.slice(0,4);
+   const posNames = ["upper-LEFT dark area","upper-RIGHT dark area","lower-LEFT dark area","lower-RIGHT dark area"];
+   const labelList = callouts.length
+     ? `TEXT RULES — FOLLOW EXACTLY: there are EXACTLY ${callouts.length} text labels in this image, no more, no fewer, and no label is ever repeated. ${callouts.map((c,idx)=>`Label ${idx+1}, placed in the ${posNames[idx]}, reads exactly "${c.toUpperCase()}"`).join(". ")}. Each label is ONE single line of small uppercase letter-spaced white sans-serif text, spelled letter-perfect with no extra characters or symbols, floating freely in the dark background near its matching part of the bag. Draw NO connector lines, NO pointer lines, NO arrows, NO brackets and NO leader lines — nothing connects or points from a label to the bag. Labels sit only in empty dark background, never overlapping the bag. Apart from these ${callouts.length} labels and the bag's own printed branding, the image contains ZERO other text, letters, numbers or symbols.`
+     : `TEXT RULES: this image contains ZERO text, labels, lines or arrows of any kind (only the bag's own printed branding) — leave clean dark space around the bag.`;
+   return `${BASE(i)} PREMIUM DARK SPOTLIGHT PRODUCT SHOT with minimal callouts. Background: deep charcoal-to-black vertical gradient with a single soft cone of white light beaming down from directly above, faint dust particles glowing inside the beam. The bag FLOATS slightly above a glossy dark floor that shows a soft mirror reflection of the bag fading downward. Bag at three-quarter front angle. CRITICAL OPEN-BAG POSE: EVERY compartment is unzipped and gaping WIDE open at the same time — the main compartment lid folds back showing the interior lining and organiser, the second compartment gapes open behind it, the front pocket hangs fully open, and both side mesh bottle pockets are pushed outward — the complete storage anatomy visible in one photograph, every part physically true to the actual product, open zippers with pullers hanging naturally. ${labelList} LIGHTING RULE: even though the scene is dark and moody, the bag itself sits fully inside the bright spotlight cone and is lit like a studio product photo — its true colours stay saturated and clearly readable, especially any contrast-coloured zippers, trims and the brand badge from the reference photos; only the BACKGROUND is dark, never the bag. Dramatic, premium, photorealistic.`;
+ },
+ tech: i=>{
+   const callouts = [...i.comfort, ...i.space, ...(i.extras?i.extras.split(/[,\n]/).map(s=>s.trim()).filter(Boolean):[])].slice(0,7);
+   return `${BASE(i)} PREMIUM DARK TECH-SPEC INFOGRAPHIC, like a high-end gear brand's engineering diagram. Background: very dark charcoal-to-black (#0c0f12) with a faint glowing circuit-board / blueprint line pattern on the floor plane and subtle hexagonal texture, dramatic studio rim lighting on the bag with a soft glowing reflection beneath it. The bag stands centred at three-quarter front angle, hero-lit, with a thin glowing accent-colour outline tracing its silhouette edges (accent colour sampled from the bag itself${i.colour?`, the ${i.colour}`:""}). TITLE at top centre in large bold uppercase pale-grey sans-serif on two lines: "ENGINEERED FOR" / "MAXIMUM CARRY". ${callouts.length?`Around the bag, EXACTLY ${callouts.length} feature callouts in small uppercase letter-spaced pale-grey text, each appearing exactly once, spelled letter-perfect, floating freely in the dark background near its exact part of the bag, distributed evenly left and right: ${callouts.join(", ")}. Draw NO connector lines, NO pointer lines, NO dots and NO leader lines between any callout text and the bag.`:`Do NOT draw any feature callouts or callout lines around the bag — leave the sides clean.`} ${(()=>{const a=[];if(i.H)a.push(`a vertical arrow along the left side of the bag labelled "HEIGHT: ${i.H} Inch" (label written horizontally beside the arrow, normal reading direction)`);if(i.W)a.push(`a horizontal arrow under the front edge labelled "WIDTH: ${i.W} Inch"`);if(i.D)a.push(`a diagonal arrow along the base side edge labelled "DEPTH: ${i.D} Inch"`);return a.length?`DIMENSIONS drawn as thin glowing accent-colour measurement arrows with arrowheads (these measurement arrows are allowed): ${a.join(", ")}. Show ONLY these measurements — do not invent any other number.`:`Do NOT draw any measurement arrows or dimension numbers.`;})()} ${i.cap?`On the upper right, a futuristic HUD-style rounded badge panel with a thin glowing accent border, dark translucent fill and corner notches, reading "CAPACITY:" in small pale text and "${i.cap}L" in large bold accent-colour text, with a small wireframe cube icon beside it.`:`Do NOT draw any capacity badge.`} All linework hairline-thin and precise, futuristic but clean. No other text anywhere.`;
+ }
+};
+
+/* Describes the role of each attached reference image, in order */
+function refNote(){
+  let n=1, s=`Attached reference images, in order:`;
+  productImgs.forEach((img, idx) => {
+    s += ` (${n}) product photo angle ${idx+1} — replicate this bag with complete fidelity.`;
+    n++;
+  });
+  if(logoImg){ s+=` (${n}) the brand logo — use this exact logo wherever a logo is needed.`; n++; }
+  if(modelImg){ s+=` (${n}) lifestyle composition and pose reference photo — use ONLY for composition, lighting, bag scale, and pose reference. Do NOT copy the face, facial features, or specific identity of the person. Keep the generated face completely generic and brand-new to comply with safety policies.`; n++; }
+  if(styleImg){ s+=` (${n}) a finished approved PDP design from this brand — COPY its layout, composition, title bubble style, callout card design, typography, connector lines, background treatment and overall visual language as closely as possible, but feature THIS product and ONLY the text specified in the brief.`; }
+  return s+" BRIEF: ";
+}
+
+/* ================= GENERATION ================= */
+const resultsEl=document.getElementById("results");
+const toast=document.getElementById("toast");
+function showToast(m){ toast.textContent=m; toast.style.display="block"; setTimeout(()=>toast.style.display="none",6000); }
+
+/* ================= PREVIEW MODAL ================= */
+const modal=document.getElementById("modal"), mImg=document.getElementById("mImg"),
+      mName=document.getElementById("mName"), mCount=document.getElementById("mCount"),
+      mPrev=document.getElementById("mPrev"), mNext=document.getElementById("mNext");
+let mList=[], mIdx=0;
+
+function galleryItems(){
+  return [...resultsEl.querySelectorAll(".rcard")].map(c=>{
+    const im=c.querySelector(".r-img img");
+    return im?{url:im.src, name:(c.querySelector(".r-name")||{}).textContent||"Image"}:null;
+  }).filter(Boolean);
+}
+function openModal(url){
+  mList=galleryItems(); if(!mList.length) return;
+  mIdx=Math.max(0, mList.findIndex(g=>g.url===url));
+  renderModal();
+  modal.classList.add("open");
+  document.body.style.overflow="hidden";
+}
+function closeModal(){ modal.classList.remove("open"); document.body.style.overflow=""; }
+function renderModal(){
+  const g=mList[mIdx];
+  mImg.src=g.url; mImg.classList.remove("zoomed");
+  mName.textContent=g.name;
+  mCount.textContent=`${mIdx+1} / ${mList.length}`;
+  mPrev.disabled = mNext.disabled = mList.length<2;
+}
+function mStep(d){ mIdx=(mIdx+d+mList.length)%mList.length; renderModal(); }
+mPrev.onclick=()=>mStep(-1);
+mNext.onclick=()=>mStep(1);
+document.getElementById("mClose").onclick=closeModal;
+document.getElementById("mDl").onclick=()=>{
+  const a=document.createElement("a");
+  a.href=mImg.src;
+  a.download=`${(mName.textContent||"pdp").replaceAll(" ","_")}.png`;
+  a.click();
+};
+mImg.addEventListener("click",()=>mImg.classList.toggle("zoomed"));
+modal.addEventListener("click",e=>{ if(e.target===modal) closeModal(); });
+document.addEventListener("keydown",e=>{
+  if(!modal.classList.contains("open")) return;
+  if(e.key==="Escape") closeModal();
+  if(e.key==="ArrowLeft") mStep(-1);
+  if(e.key==="ArrowRight") mStep(1);
+});
+/* open on click of any generated image */
+resultsEl.addEventListener("click",e=>{
+  if(e.target.tagName==="IMG" && e.target.closest(".r-img")) openModal(e.target.src);
+});
+
+/* ================= MULTI-SELECT DOWNLOAD ================= */
+const dlBar=document.getElementById("dlBar");
+function updateDlBar(){
+  const n=document.querySelectorAll(".r-pick:checked").length;
+  dlBar.classList.toggle("show", n>0);
+  document.getElementById("dlCount").textContent=`${n} selected`;
+}
+resultsEl.addEventListener("change",e=>{
+  if(e.target.classList.contains("r-pick")) updateDlBar();
+});
+document.getElementById("dlSelAll").onclick=()=>{
+  document.querySelectorAll(".r-pick").forEach(p=>p.checked=true);
+  updateDlBar();
+};
+document.getElementById("dlClear").onclick=()=>{
+  document.querySelectorAll(".r-pick:checked").forEach(p=>p.checked=false);
+  updateDlBar();
+};
+document.getElementById("dlAll").onclick=async()=>{
+  const picks=[...document.querySelectorAll(".r-pick:checked")];
+  let n=1;
+  for(const p of picks){
+    const card=p.closest(".rcard");
+    const img=card.querySelector(".r-img img");
+    if(!img) continue;
+    const name=((card.querySelector(".r-name")||{}).textContent||"pdp").replaceAll(" ","_");
+    const a=document.createElement("a");
+    a.href=img.src;
+    a.download=`${name}_${String(n++).padStart(2,"0")}.png`;
+    a.click();
+    /* small gap so the browser doesn't block rapid downloads */
+    await new Promise(r=>setTimeout(r,450));
+  }
+};
+
+/* Compress/resize images to stay within payload limits */
+function compressImage(file, maxDimension = 1024) {
+  return new Promise((resolve) => {
+    if (!file || !file.type || !file.type.startsWith("image/")) {
+      return resolve(file);
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            return resolve(file);
+          }
+          const compressedFile = new File([blob], file.name, {
+            type: file.type || "image/jpeg",
+            lastModified: Date.now()
+          });
+          resolve(compressedFile);
+        }, file.type || "image/jpeg", 0.85);
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ============ APP-DRAWN LABEL OVERLAY (canvas) ============ */
+const ICON_MAP=[
+  [/bottle/i,"🧴"],[/laptop/i,"💻"],[/organi[sz]er/i,"🗂️"],[/compartment/i,"📦"],
+  [/pocket/i,"👝"],[/strap/i,"🎒"],[/handle/i,"✋"],[/zip/i,"🧷"],[/light/i,"🪶"],
+  [/pad|cushion/i,"🛏️"],[/stitch|bartack/i,"🧵"],[/puller/i,"🔩"],[/sleeve|document/i,"💼"],
+  [/mesh/i,"🥅"],[/rib|base|bottom/i,"🛡️"],[/fabric|vegan/i,"🧶"],[/breathab|back panel/i,"🌬️"],
+  [/water|rain/i,"💧"],[/tear|tough|durab/i,"💪"],[/print|trendy/i,"🎨"],[/usb|charg/i,"🔌"],[/reflect/i,"✨"]
+];
+function iconFor(t){ for(const [re,e] of ICON_MAP) if(re.test(t)) return e; return "✔️"; }
+function loadImgEl(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
+function roundRectPath(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function wrapLines(ctx,text,maxW){
+  const words=text.split(" "), lines=[]; let cur="";
+  for(const w of words){ const t=cur?cur+" "+w:w;
+    if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
+  if(cur) lines.push(cur);
+  return lines;
+}
+async function overlayCards(dataUrl,labels,layout){
+  const img=await loadImgEl(dataUrl);
+  const W=img.width,H=img.height;
+  const c=document.createElement("canvas"); c.width=W; c.height=H;
+  const ctx=c.getContext("2d"); ctx.drawImage(img,0,0);
+  const fontPx=Math.round(W*0.0165), iconPx=Math.round(W*0.038), radius=W*0.018;
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  function drawCard(x,y,w,label){
+    ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
+    const lines=wrapLines(ctx,label,w-fontPx*1.4);
+    const h=fontPx*1.2+iconPx+fontPx*0.7+lines.length*fontPx*1.35+fontPx*1.2;
+    ctx.save();
+    ctx.shadowColor="rgba(20,40,70,0.18)"; ctx.shadowBlur=W*0.012; ctx.shadowOffsetY=W*0.004;
+    ctx.fillStyle="#ffffff"; roundRectPath(ctx,x,y,w,h,radius); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle="#1d3354";
+    ctx.font=`${iconPx}px "Segoe UI Emoji", Archivo, sans-serif`;
+    ctx.fillText(iconFor(label), x+w/2, y+fontPx*1.2+iconPx/2);
+    ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
+    lines.forEach((ln,k)=>ctx.fillText(ln, x+w/2, y+fontPx*1.2+iconPx+fontPx*0.7+k*fontPx*1.35+fontPx*0.65));
+    return h;
+  }
+  if(layout==="sides"){
+    const cardW=Math.round(W*0.20);
+    const leftLabels=labels.slice(0,Math.ceil(labels.length/2));
+    const rightLabels=labels.slice(Math.ceil(labels.length/2));
+    const margin=W*0.035, gap=H*0.03, topY=H*0.23;
+    let y=topY; for(const l of leftLabels){ y+=drawCard(margin,y,cardW,l)+gap; }
+    y=topY; for(const l of rightLabels){ y+=drawCard(W-margin-cardW,y,cardW,l)+gap; }
+  }else{
+    const n=labels.length, gap=W*0.018, margin=W*0.05;
+    const w=Math.min(W*0.22,(W-2*margin-(n-1)*gap)/n);
+    let x=(W-(w*n+gap*(n-1)))/2;
+    const y=H*0.80;
+    for(const l of labels){ drawCard(x,y,w,l); x+=w+gap; }
+  }
+  return c.toDataURL("image/png");
+}
+
+document.getElementById("genBtn").addEventListener("click", async ()=>{
+  const key=keyInp.value.trim();
+  const [provider,model]=document.getElementById("engine").value.split(":");
+  /* gemini with no key → use the server-side key via /api/generate (hosted site only) */
+  const serverMode = provider==="gemini" && !isGeminiKey(key);
+  if(serverMode && location.protocol==="file:") return showToast("Opened as a local file — paste a Gemini API key, or use the hosted site to generate with the server key.");
+  if(provider==="openai" && !key.startsWith("sk-")) return showToast("gpt-image-1 needs an OpenAI key (starts with sk-).");
+  if(productImgs.length === 0) return showToast("Upload at least one product photo first.");
+  const sel=selectedTypes();
+  if(!sel.length) return showToast("Select at least one image type.");
+
+  const i=info(), quality=document.getElementById("quality").value, size=document.getElementById("size").value;
+  const btn=document.getElementById("genBtn"); btn.disabled=true;
+  if(resultsEl.querySelector(".empty")) resultsEl.innerHTML="";
+
+  const rawFiles=[...productImgs]; if(logoImg) rawFiles.push(logoImg); if(modelImg) rawFiles.push(modelImg); if(styleImg) rawFiles.push(styleImg);
+  showToast("Resizing uploaded images to fit API limits...");
+  const files = await Promise.all(rawFiles.map(f => compressImage(f)));
+
+  for(const id of sel){
+    const t=TYPES.find(x=>x.id===id);
+    const card=document.createElement("div");
+    card.className="rcard";
+    card.innerHTML=`<div class="r-img"><div class="spinner"></div></div>
+      <div class="r-foot"><span class="r-name">${t.name}</span></div>
+      <div class="r-status">Generating with ${provider==="gemini"?"Nano Banana":"gpt-image-1"}…</div>`;
+    resultsEl.prepend(card);
+
+    try{
+      /* app-drawn labels: ask the AI for a clean image, overlay cards ourselves */
+      let overlayLabels=null, overlayLayout=null, iP=i;
+      if(document.getElementById("overlayMode").checked){
+        if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; iP={...i,comfort:[]}; }
+        if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; iP={...i,space:[]}; }
+        if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
+          if(L.length){ overlayLabels=L; overlayLayout="bottom"; iP={...i,needItems:""}; } }
+      }
+      let prompt=refNote()+PROMPTS[id](iP);
+      if(overlayLabels && overlayLayout==="sides") prompt+=" COMPOSITION: keep the bag centred and leave wide, completely empty background bands on the far left and far right edges of the image.";
+      if(overlayLabels && overlayLayout==="bottom") prompt+=" COMPOSITION: keep the bag in the upper two-thirds and leave the bottom quarter of the image as completely empty background.";
+      if(document.getElementById("cleanMode").checked){
+        prompt+=" FINAL OVERRIDE — NO LINES: keep every title, label, callout card and badge exactly as specified above, but draw ABSOLUTELY NO connector lines, pointer lines, leader lines, arrows, dots or brackets between any text/card and the bag — all labels float freely near their parts. (Measurement arrows for dimensions, if specified above, are the only allowed lines.)";
+      }
+      const out = provider==="gemini"
+        ? (serverMode ? await genGeminiServer(model,prompt,files,size) : await genGemini(model,key,prompt,files,size))
+        : await genOpenAI(key,prompt,files,size,quality);
+
+      let url=`data:${out.mime};base64,${out.b64}`;
+      if(overlayLabels){
+        try{ url=await overlayCards(url,overlayLabels,overlayLayout); }
+        catch(e){ console.warn("overlay failed",e); }
+      }
+      card.querySelector(".r-img").innerHTML=`<input type="checkbox" class="r-pick" title="Select for download"/><img src="${url}"/>`;
+      card.querySelector(".r-status").textContent="Done ✓";
+      const dl=document.createElement("button");
+      dl.className="mini"; dl.textContent="⬇ PNG";
+      dl.onclick=()=>{ const a=document.createElement("a"); a.href=url; a.download=`${(i.brand||"pdp").replaceAll(" ","_")}_${id}.png`; a.click(); };
+      card.querySelector(".r-foot").appendChild(dl);
+      const re=document.createElement("button");
+      re.className="mini"; re.textContent="↻";
+      re.title="Regenerate"; re.onclick=()=>{ card.remove(); regenOne(id); };
+      card.querySelector(".r-foot").appendChild(re);
+    }catch(err){
+      card.querySelector(".r-img").innerHTML="⚠️";
+      const st=card.querySelector(".r-status");
+      st.textContent="Failed: "+err.message;
+      st.classList.add("err");
+      if(String(err.message).match(/Failed to fetch|cloned|postMessage|NetworkError/i)) {
+        st.textContent="Blocked by the preview sandbox. Download this HTML file, then double-click it to open in Chrome — it works there.";
+      } else if (String(err.message).match(/IMAGE_OTHER|OTHER|safety|policy/i)) {
+        st.textContent="Gemini Safety Refusal: To prevent deepfakes, Gemini blocks replicating real faces/children. Ensure the uploaded model photo has no clear face, or try changing 'Model' to 'No model'.";
+      }
+      const re=document.createElement("button");
+      re.className="mini"; re.textContent="↻ Retry";
+      re.onclick=()=>{ card.remove(); regenOne(id); };
+      card.querySelector(".r-foot").appendChild(re);
+    }
+  }
+  btn.disabled=false;
+});
+
+/* ---------- Gemini / Nano Banana ---------- */
+function toB64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(",")[1]);
+    r.onerror=()=>rej(new Error("Could not read file"));
+    r.readAsDataURL(file);
+  });
+}
+async function genGemini(model,key,prompt,files,size){
+  const parts=[{text:prompt}];
+  for(const f of files){
+    parts.push({inline_data:{mime_type:f.type||"image/png", data:await toB64(f)}});
+  }
+  const body={
+    contents:[{role:"user",parts}],
+    generationConfig:{
+      responseModalities:["IMAGE","TEXT"],
+      imageConfig:{aspectRatio: size==="1024x1536"?"2:3":"1:1"}
+    }
+  };
+  let res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
+    method:"POST",
+    headers:{"x-goog-api-key":key,"Content-Type":"application/json"},
+    body:JSON.stringify(body)
+  });
+  let data=await res.json();
+  /* some model versions reject imageConfig — retry without it */
+  if(!res.ok && JSON.stringify(data).match(/image_config|imageConfig|aspect/i)){
+    delete body.generationConfig.imageConfig;
+    res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
+      method:"POST",
+      headers:{"x-goog-api-key":key,"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
+    data=await res.json();
+  }
+  if(!res.ok) throw new Error(data?.error?.message||`HTTP ${res.status}`);
+  const cand=data.candidates?.[0];
+  const part=(cand?.content?.parts||[]).find(p=>p.inlineData||p.inline_data);
+  if(!part){
+    const reason=cand?.finishReason?` (${cand.finishReason})`:"";
+    const txt=(cand?.content?.parts||[]).find(p=>p.text)?.text||"";
+    throw new Error("No image returned"+reason+(txt?": "+txt.slice(0,120):""));
+  }
+  const inl=part.inlineData||part.inline_data;
+  return {b64:inl.data, mime:inl.mimeType||inl.mime_type||"image/png"};
+}
+
+/* ---------- Gemini via server key (/api/generate) ---------- */
+async function genGeminiServer(model,prompt,files,size){
+  const images=[];
+  for(const f of files) images.push({mime:f.type||"image/png", data:await toB64(f)});
+  const doFetch = ()=>fetch("/api/generate",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      ...(localStorage.getItem("pdp_pass")?{"x-app-pass":localStorage.getItem("pdp_pass")}:{})
+    },
+    body:JSON.stringify({model,prompt,images,size})
+  });
+  let res=await doFetch();
+  if(res.status===401){
+    const p=window.prompt("This app is password protected. Enter the app password:");
+    if(p){ localStorage.setItem("pdp_pass",p); res=await doFetch(); }
+  }
+  const raw=await res.text();
+  let data;
+  try{ data=JSON.parse(raw); }
+  catch{ throw new Error(`Server error (HTTP ${res.status}): ${raw.slice(0,140)}`); }
+  if(!res.ok) throw new Error(data?.error?.message||`HTTP ${res.status}`);
+  const cand=data.candidates?.[0];
+  const part=(cand?.content?.parts||[]).find(p=>p.inlineData||p.inline_data);
+  if(!part){
+    const reason=cand?.finishReason?` (${cand.finishReason})`:"";
+    const txt=(cand?.content?.parts||[]).find(p=>p.text)?.text||"";
+    throw new Error("No image returned"+reason+(txt?": "+txt.slice(0,120):""));
+  }
+  const inl=part.inlineData||part.inline_data;
+  return {b64:inl.data, mime:inl.mimeType||inl.mime_type||"image/png"};
+}
+
+/* ---------- OpenAI gpt-image-1 ---------- */
+async function genOpenAI(key,prompt,files,size,quality){
+  const fields=[["model","gpt-image-1"],["prompt",prompt],["size",size],["quality",quality],["input_fidelity","high"]];
+  const fparts=files.map(f=>["image[]",f]);
+  const {body,contentType}=await buildMultipart(fields,fparts);
+  const res=await fetch("https://api.openai.com/v1/images/edits",{
+    method:"POST",
+    headers:{Authorization:`Bearer ${key}`,"Content-Type":contentType},
+    body
+  });
+  const data=await res.json();
+  if(!res.ok) throw new Error(data?.error?.message||`HTTP ${res.status}`);
+  return {b64:data.data[0].b64_json, mime:"image/png"};
+}
+
+/* Build multipart/form-data manually as an ArrayBuffer — works even where
+   FormData/Blob can't be cloned (sandboxed iframes, fetch proxies). */
+async function buildMultipart(fields, files){
+  const boundary="----snaptoshelf"+Math.random().toString(16).slice(2);
+  const enc=new TextEncoder();
+  const parts=[];
+  for(const [k,v] of fields){
+    parts.push(enc.encode(`--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`));
+  }
+  for(const [k,file] of files){
+    const buf=new Uint8Array(await file.arrayBuffer());
+    parts.push(enc.encode(`--${boundary}\r\nContent-Disposition: form-data; name="${k}"; filename="${file.name||"image.png"}"\r\nContent-Type: ${file.type||"image/png"}\r\n\r\n`));
+    parts.push(buf);
+    parts.push(enc.encode(`\r\n`));
+  }
+  parts.push(enc.encode(`--${boundary}--\r\n`));
+  const total=parts.reduce((s,p)=>s+p.length,0);
+  const body=new Uint8Array(total);
+  let off=0; for(const p of parts){ body.set(p,off); off+=p.length; }
+  return {body:body.buffer, contentType:`multipart/form-data; boundary=${boundary}`};
+}
+
+function regenOne(id){
+  document.querySelectorAll(".tcard").forEach(c=>c.classList.toggle("on",c.dataset.id===id));
+  document.getElementById("genBtn").click();
+}
+</script>
+</body>
+</html>
