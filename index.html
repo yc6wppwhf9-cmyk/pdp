@@ -1035,9 +1035,11 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
   const fontPx=Math.round(W*0.0165), iconPx=Math.round(W*0.038), radius=W*0.018;
   ctx.textAlign="center"; ctx.textBaseline="middle";
   async function drawCard(x,y,w,label){
-    if(iconMap && iconMap[label]){
+    const _bk=label.replace(/^\d+\s+/,"").replace(/s$/i,"");
+    const _iu=iconMap&&(iconMap[label]||iconMap[_bk]||iconMap[_bk+"s"]||iconMap[_bk+"S"]);
+    if(_iu){
       try{
-        const ic=await loadImgEl(iconMap[label]);
+        const ic=await loadImgEl(_iu);
         ctx.save();
         ctx.shadowColor="rgba(20,40,70,0.22)"; ctx.shadowBlur=W*0.014; ctx.shadowOffsetY=W*0.005;
         ctx.drawImage(ic,x,y,w,w);
