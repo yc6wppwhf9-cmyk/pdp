@@ -600,7 +600,7 @@ const capField = document.getElementById("capacity");
 const capAutoLabel = document.getElementById("capAutoLabel");
 capField.addEventListener("input", () => {
   capacityManuallySet = capField.value !== "";
-  capAutoLabel.style.display = capacityManuallySet ? "none" : "none";
+  if (capacityManuallySet) capAutoLabel.style.display = "none";
   if (!capacityManuallySet) autoCalcCapacity();
 });
 function autoCalcCapacity() {
@@ -1035,6 +1035,40 @@ async function overlayCards(dataUrl,labels,layout){
   return c.toDataURL("image/png");
 }
 
+/* Draws a guaranteed capacity badge centred between the two bag views in the dims image */
+async function overlayCapacityBadge(dataUrl, capLitres) {
+  const img = await loadImgEl(dataUrl);
+  const W = img.width, H = img.height;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
+  const bW = Math.round(W * 0.17);
+  const bH = Math.round(H * 0.115);
+  const bx = Math.round((W - bW) / 2);
+  const by = Math.round(H * 0.42);
+  const r  = Math.round(bH * 0.22);
+  const numSz = Math.round(bH * 0.46);
+  const lblSz = Math.round(bH * 0.23);
+  /* shadow + fill */
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.18)"; ctx.shadowBlur = W * 0.012; ctx.shadowOffsetY = W * 0.004;
+  ctx.fillStyle = "#ffffff"; roundRectPath(ctx, bx, by, bW, bH, r); ctx.fill();
+  ctx.restore();
+  /* border */
+  ctx.save();
+  roundRectPath(ctx, bx, by, bW, bH, r);
+  ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = Math.max(2, Math.round(W * 0.003)); ctx.stroke();
+  ctx.restore();
+  /* text */
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#111111";
+  ctx.font = `700 ${numSz}px Archivo, Arial, sans-serif`;
+  ctx.fillText(`${capLitres}L`, bx + bW / 2, by + bH * 0.4);
+  ctx.font = `600 ${lblSz}px Archivo, Arial, sans-serif`;
+  ctx.fillStyle = "#444444";
+  ctx.fillText("CAPACITY", bx + bW / 2, by + bH * 0.76);
+  return c.toDataURL("image/png");
+}
+
 document.getElementById("genBtn").addEventListener("click", async ()=>{
   const key=keyInp.value.trim();
   const [provider,model]=document.getElementById("engine").value.split(":");
@@ -1076,12 +1110,14 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
 
     try{
       /* app-drawn labels: ask the AI for a clean image, overlay cards ourselves */
-      let overlayLabels=null, overlayLayout=null, iP=i;
+      let overlayLabels=null, overlayLayout=null, overlayCapLitres=null, iP=i;
       if(document.getElementById("overlayMode").checked){
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; iP={...i,comfort:[]}; }
         if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; iP={...i,space:[]}; }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
           if(L.length){ overlayLabels=L; overlayLayout="bottom"; iP={...i,needItems:""}; } }
+        /* dims: canvas draws the capacity badge — strip it from the AI prompt */
+        if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...i,cap:""}; }
       }
       const filesToUse = id === "white" ? filesWhite : files;
       let prompt=refNote(id)+PROMPTS[id](iP);
@@ -1098,6 +1134,10 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
       if(overlayLabels){
         try{ url=await overlayCards(url,overlayLabels,overlayLayout); }
         catch(e){ console.warn("overlay failed",e); }
+      }
+      if(overlayCapLitres){
+        try{ url=await overlayCapacityBadge(url,overlayCapLitres); }
+        catch(e){ console.warn("capacity badge overlay failed",e); }
       }
       card.querySelector(".r-img").innerHTML=`<input type="checkbox" class="r-pick" title="Select for download"/><img src="${url}"/>`;
       card.querySelector(".r-status").textContent="Done ✓";
