@@ -1036,15 +1036,16 @@ async function overlayCards(dataUrl,labels,layout){
 }
 
 /* Draws a guaranteed capacity badge centred between the two bag views in the dims image */
-async function overlayCapacityBadge(dataUrl, capLitres) {
+async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
+  const isPortrait = size === "1024x1536";
   const bW = Math.round(W * 0.17);
-  const bH = Math.round(H * 0.115);
+  const bH = Math.round(H * (isPortrait ? 0.075 : 0.115));
   const bx = Math.round((W - bW) / 2);
-  const by = Math.round(H * 0.42);
+  const by = Math.round(H * (isPortrait ? 0.895 : 0.42));
   const r  = Math.round(bH * 0.22);
   const numSz = Math.round(bH * 0.46);
   const lblSz = Math.round(bH * 0.23);
@@ -1136,7 +1137,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         catch(e){ console.warn("overlay failed",e); }
       }
       if(overlayCapLitres){
-        try{ url=await overlayCapacityBadge(url,overlayCapLitres); }
+        try{ url=await overlayCapacityBadge(url,overlayCapLitres,size); }
         catch(e){ console.warn("capacity badge overlay failed",e); }
       }
       card.querySelector(".r-img").innerHTML=`<input type="checkbox" class="r-pick" title="Select for download"/><img src="${url}"/>`;
