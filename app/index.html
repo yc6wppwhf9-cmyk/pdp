@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDP AI Studio</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Marketing PDP Builder</p>
+            <h1>PDP AI Studio</h1>
+          </div>
+          <div class="top-actions">
+            <button id="exportBtn" class="icon-btn" type="button" title="Export project JSON">Export</button>
+            <button id="resetBtn" class="ghost-btn" type="button">Reset</button>
+          </div>
+        </header>
+
+        <section class="hero-panel">
+          <div class="upload-panel">
+            <label class="upload-drop" for="productImage">
+              <input id="productImage" type="file" accept="image/*" />
+              <span class="upload-icon">+</span>
+              <span class="upload-title">Upload product image</span>
+              <span class="upload-copy">Use the cleanest front image of the bag.</span>
+            </label>
+            <div class="preview-frame">
+              <img id="previewImage" alt="Uploaded product preview" />
+              <div id="emptyPreview" class="empty-preview">Product preview</div>
+            </div>
+          </div>
+
+          <form id="productForm" class="details-panel">
+            <div class="field-grid">
+              <label>
+                Brand
+                <input id="brand" name="brand" value="Priority" />
+              </label>
+              <label>
+                Product name
+                <input id="productName" name="productName" value="Galaxy School Backpack" />
+              </label>
+              <label>
+                Audience
+                <select id="audience" name="audience">
+                  <option>Kids 7-10 years</option>
+                  <option>College students</option>
+                  <option>Office professionals</option>
+                  <option>Travel users</option>
+                </select>
+              </label>
+              <label>
+                Capacity
+                <input id="capacity" name="capacity" value="28 L" />
+              </label>
+              <label>
+                Dimensions
+                <input id="dimensions" name="dimensions" value="18 x 12 x 9 in / 46 x 30 x 23 cm" />
+              </label>
+              <label>
+                Color / theme
+                <input id="theme" name="theme" value="Purple space theme" />
+              </label>
+            </div>
+
+            <label class="wide-field">
+              Features
+              <textarea id="features" name="features">Adjustable shoulder straps, breathable back panel, padded laptop sleeve, front pocket, bottle pocket, premium zippers, soft cushion handle, durable fabric</textarea>
+            </label>
+
+            <button id="generateBtn" class="primary-btn" type="submit">Generate PDP Set</button>
+            <button id="aiGenerateBtn" class="ghost-btn" type="button">Generate With NVIDIA</button>
+          </form>
+        </section>
+
+        <section class="section-head">
+          <div>
+            <p class="eyebrow">Generated Output</p>
+            <h2>8-image PDP set</h2>
+          </div>
+          <div class="output-actions">
+            <button id="downloadAllBtn" class="ghost-btn" type="button">Download PNGs</button>
+            <button id="exportPptxBtn" class="ghost-btn" type="button">Export PPTX</button>
+            <button id="exportDocxBtn" class="ghost-btn" type="button">Export DOCX</button>
+            <div id="completionBadge" class="status-badge">Ready</div>
+          </div>
+        </section>
+
+        <section id="creativeGrid" class="creative-grid"></section>
+      </section>
+
+      <aside class="qc-panel">
+        <div class="qc-sticky">
+          <p class="eyebrow">QC Checklist</p>
+          <h2>Mandatory checks</h2>
+          <div id="qcScore" class="score">0/8</div>
+          <div id="qcList" class="qc-list"></div>
+        </div>
+      </aside>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>

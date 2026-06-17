@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Icon Preview</title>
+  <style>
+    body { background: #1b1d24; font-family: Arial, sans-serif; padding: 32px; }
+    h2 { color: #d8f3ec; margin: 32px 0 12px; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; }
+    .row { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; }
+    .icon-cell { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .icon-cell span { color: #9ca3af; font-size: 11px; text-align: center; max-width: 80px; }
+    canvas.icon { background: #2a3347; border-radius: 50%; }
+  </style>
+</head>
+<body>
+
+<h2>Comfort Features</h2>
+<div class="row" id="comfort-row"></div>
+
+<h2>Space Story</h2>
+<div class="row" id="space-row"></div>
+
+<h2>What Fits</h2>
+<div class="row" id="fits-row"></div>
+
+<script>
+function makeCanvas(size) {
+  const c = document.createElement("canvas");
+  c.className = "icon";
+  c.width = size;
+  c.height = size;
+  return c;
+}
+
+function drawIcon(canvas, drawFn, color = "#1f7a6d") {
+  const ctx = canvas.getContext("2d");
+  const s = canvas.width;
+  ctx.clearRect(0, 0, s, s);
+
+  // teal circle bg
+  ctx.beginPath();
+  ctx.arc(s / 2, s / 2, s / 2, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = s * 0.075;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.fillStyle = "#ffffff";
+
+  drawFn(ctx, s);
+}
+
+// --- icon drawing functions ---
+
+function iconShoulderStrap(ctx, s) {
+  const m = s * 0.2;
+  // curved strap shape
+  ctx.beginPath();
+  ctx.moveTo(m, s - m);
+  ctx.bezierCurveTo(m, m, s - m, m, s - m, s - m);
+  ctx.stroke();
+  // buckle
+  ctx.strokeRect(s * 0.38, s * 0.62, s * 0.24, s * 0.16);
+}
+
+function iconBackPanel(ctx, s) {
+  const m = s * 0.18;
+  // rectangle (back panel)
+  ctx.strokeRect(m, m, s - m * 2, s - m * 2);
+  // grid lines suggesting mesh
+  ctx.beginPath();
+  ctx.moveTo(m, s * 0.5); ctx.lineTo(s - m, s * 0.5);
+  ctx.moveTo(s * 0.5, m); ctx.lineTo(s * 0.5, s - m);
+  ctx.stroke();
+  // airflow arrows
+  ctx.beginPath();
+  ctx.moveTo(s * 0.35, s * 0.62); ctx.lineTo(s * 0.35, s * 0.75);
+  ctx.moveTo(s * 0.5,  s * 0.62); ctx.lineTo(s * 0.5,  s * 0.75);
+  ctx.moveTo(s * 0.65, s * 0.62); ctx.lineTo(s * 0.65, s * 0.75);
+  ctx.stroke();
+}
+
+function iconLaptopSleeve(ctx, s) {
+  const m = s * 0.18;
+  // laptop outline
+  ctx.strokeRect(m, m + s * 0.04, s - m * 2, s - m * 2 - s * 0.14);
+  // screen line
+  ctx.beginPath();
+  ctx.moveTo(m + s * 0.06, m + s * 0.1);
+  ctx.lineTo(s - m - s * 0.06, m + s * 0.1);
+  ctx.stroke();
+  // base
+  ctx.beginPath();
+  ctx.moveTo(m * 0.5, s - m + s * 0.02);
+  ctx.lineTo(s - m * 0.5, s - m + s * 0.02);
+  ctx.stroke();
+}
+
+function iconFrontPocket(ctx, s) {
+  const m = s * 0.18;
+  // outer bag
+  ctx.strokeRect(m, m, s - m * 2, s - m * 2);
+  // pocket flap
+  ctx.beginPath();
+  ctx.moveTo(m, s * 0.52);
+  ctx.lineTo(s - m, s * 0.52);
+  ctx.stroke();
+  // zipper pull
+  ctx.beginPath();
+  ctx.arc(s * 0.5, s * 0.52, s * 0.05, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function iconBottlePocket(ctx, s) {
+  const cx = s / 2, m = s * 0.22;
+  // bottle body
+  ctx.beginPath();
+  ctx.moveTo(cx - m * 0.6, s * 0.42);
+  ctx.lineTo(cx - m * 0.6, s - m * 0.7);
+  ctx.arc(cx, s - m * 0.7, m * 0.6, Math.PI, 0);
+  ctx.lineTo(cx + m * 0.6, s * 0.42);
+  ctx.closePath();
+  ctx.stroke();
+  // bottle neck
+  ctx.strokeRect(cx - m * 0.3, m * 0.7, m * 0.6, s * 0.22);
+  // cap
+  ctx.beginPath();
+  ctx.arc(cx, m * 0.7, m * 0.3, Math.PI, 0);
+  ctx.stroke();
+}
+
+function iconZipper(ctx, s) {
+  const m = s * 0.2;
+  // zipper track
+  ctx.beginPath();
+  ctx.moveTo(m, s * 0.5);
+  ctx.lineTo(s - m, s * 0.5);
+  ctx.stroke();
+  // teeth
+  for (let i = 0; i < 5; i++) {
+    const x = m + (s - m * 2) * (i / 4);
+    ctx.beginPath();
+    ctx.moveTo(x, s * 0.4); ctx.lineTo(x, s * 0.6);
+    ctx.stroke();
+  }
+  // pull tab
+  ctx.beginPath();
+  ctx.arc(m + (s - m * 2) * 0.5, s * 0.5, s * 0.08, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.3)";
+  ctx.fill();
+  ctx.stroke();
+}
+
+function iconHandle(ctx, s) {
+  const cx = s / 2;
+  // handle arc
+  ctx.beginPath();
+  ctx.arc(cx, s * 0.58, s * 0.28, Math.PI, 0);
+  ctx.stroke();
+  // attachment points
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.28, s * 0.58); ctx.lineTo(cx - s * 0.28, s * 0.72);
+  ctx.moveTo(cx + s * 0.28, s * 0.58); ctx.lineTo(cx + s * 0.28, s * 0.72);
+  ctx.stroke();
+  // padding lines
+  ctx.lineWidth *= 0.5;
+  ctx.beginPath();
+  ctx.arc(cx, s * 0.58, s * 0.19, Math.PI, 0);
+  ctx.stroke();
+}
+
+function iconFabric(ctx, s) {
+  const m = s * 0.18;
+  // shield shape
+  ctx.beginPath();
+  ctx.moveTo(s / 2, m);
+  ctx.lineTo(s - m, s * 0.36);
+  ctx.lineTo(s - m, s * 0.6);
+  ctx.quadraticCurveTo(s / 2, s - m, s / 2, s - m);
+  ctx.quadraticCurveTo(m, s * 0.6, m, s * 0.6);
+  ctx.lineTo(m, s * 0.36);
+  ctx.closePath();
+  ctx.stroke();
+  // check inside
+  ctx.beginPath();
+  ctx.moveTo(s * 0.36, s * 0.52);
+  ctx.lineTo(s * 0.46, s * 0.63);
+  ctx.lineTo(s * 0.64, s * 0.42);
+  ctx.stroke();
+}
+
+// --- space story icons ---
+
+function iconMainCompartment(ctx, s) {
+  const m = s * 0.16;
+  ctx.strokeRect(m, m, s - m * 2, s - m * 2);
+  // opening arc at top
+  ctx.beginPath();
+  ctx.arc(s / 2, m, (s - m * 2) / 2, Math.PI, 0);
+  ctx.stroke();
+  // depth lines
+  ctx.lineWidth *= 0.5;
+  ctx.strokeRect(m + s * 0.06, m + s * 0.06, s - m * 2 - s * 0.12, s - m * 2 - s * 0.12);
+}
+
+function iconOrganizerPocket(ctx, s) {
+  const m = s * 0.18;
+  ctx.strokeRect(m, m, s - m * 2, s - m * 2);
+  // dividers
+  ctx.beginPath();
+  ctx.moveTo(s * 0.42, m); ctx.lineTo(s * 0.42, s - m);
+  ctx.moveTo(m, s * 0.5); ctx.lineTo(s * 0.42, s * 0.5);
+  ctx.stroke();
+  // small pen/pencil lines
+  ctx.lineWidth *= 0.6;
+  ctx.beginPath();
+  ctx.moveTo(s * 0.55, s * 0.3); ctx.lineTo(s * 0.55, s * 0.72);
+  ctx.moveTo(s * 0.65, s * 0.28); ctx.lineTo(s * 0.65, s * 0.7);
+  ctx.moveTo(s * 0.75, s * 0.3); ctx.lineTo(s * 0.75, s * 0.72);
+  ctx.stroke();
+}
+
+function iconDocumentSleeve(ctx, s) {
+  const m = s * 0.18;
+  // document stack
+  ctx.strokeRect(m, m, s - m * 2, s - m * 2);
+  ctx.beginPath();
+  ctx.moveTo(m + s * 0.08, m - s * 0.04);
+  ctx.lineTo(s - m + s * 0.04, m - s * 0.04);
+  ctx.lineTo(s - m + s * 0.04, s - m - s * 0.04);
+  ctx.stroke();
+  // lines on doc
+  [0.42, 0.54, 0.66].forEach(y => {
+    ctx.beginPath();
+    ctx.moveTo(m + s * 0.1, s * y); ctx.lineTo(s - m - s * 0.1, s * y);
+    ctx.stroke();
+  });
+}
+
+function iconSidePocket(ctx, s) {
+  const m = s * 0.18;
+  // bag side view
+  ctx.strokeRect(m, m, s - m * 2, s - m * 2);
+  // side pocket bulge
+  ctx.beginPath();
+  ctx.moveTo(s - m, s * 0.3);
+  ctx.bezierCurveTo(s - m + s * 0.12, s * 0.3, s - m + s * 0.12, s * 0.7, s - m, s * 0.7);
+  ctx.stroke();
+}
+
+function iconRaincover(ctx, s) {
+  const cx = s / 2, cy = s * 0.5;
+  // umbrella dome
+  ctx.beginPath();
+  ctx.arc(cx, cy, s * 0.32, Math.PI, 0);
+  ctx.stroke();
+  // ribs
+  for (let i = 0; i <= 4; i++) {
+    const angle = Math.PI + (Math.PI * i / 4);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * s * 0.32, cy + Math.sin(angle) * s * 0.32);
+    ctx.stroke();
+  }
+  // handle
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx, cy + s * 0.28);
+  ctx.arc(cx - s * 0.08, cy + s * 0.28, s * 0.08, 0, Math.PI);
+  ctx.stroke();
+}
+
+// --- what fits icons ---
+
+function iconBooks(ctx, s) {
+  const m = s * 0.18;
+  // 3 books
+  [[m, s*0.22, s*0.16], [m + s*0.2, s*0.18, s*0.18], [m + s*0.42, s*0.24, s*0.22]].forEach(([x, top, w]) => {
+    ctx.strokeRect(x, top, w, s - m - top);
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.3, top); ctx.lineTo(x + w * 0.3, s - m);
+    ctx.stroke();
+  });
+}
+
+function iconWallet(ctx, s) {
+  const m = s * 0.18;
+  ctx.strokeRect(m, s * 0.34, s - m * 2, s * 0.38);
+  // card slot
+  ctx.strokeRect(m + s * 0.08, s * 0.34, s * 0.3, s * 0.18);
+  // coin pocket arc
+  ctx.beginPath();
+  ctx.arc(s * 0.72, s * 0.53, s * 0.12, 0, Math.PI * 2);
+  ctx.stroke();
+  // fold line
+  ctx.beginPath();
+  ctx.moveTo(m, s * 0.53); ctx.lineTo(s - m, s * 0.53);
+  ctx.lineWidth *= 0.5;
+  ctx.stroke();
+}
+
+function iconCharger(ctx, s) {
+  const cx = s / 2, m = s * 0.2;
+  // plug body
+  ctx.strokeRect(cx - s * 0.16, m, s * 0.32, s * 0.34);
+  // prongs
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.08, m); ctx.lineTo(cx - s * 0.08, m - s * 0.14);
+  ctx.moveTo(cx + s * 0.08, m); ctx.lineTo(cx + s * 0.08, m - s * 0.14);
+  ctx.stroke();
+  // cable
+  ctx.beginPath();
+  ctx.moveTo(cx, m + s * 0.34);
+  ctx.bezierCurveTo(cx, s * 0.72, cx + s * 0.2, s * 0.72, cx + s * 0.2, s - m);
+  ctx.stroke();
+  // connector end
+  ctx.strokeRect(cx + s * 0.1, s - m, s * 0.2, s * 0.06);
+}
+
+function iconPouch(ctx, s) {
+  const m = s * 0.18;
+  // pouch body
+  ctx.beginPath();
+  ctx.moveTo(m, s * 0.42);
+  ctx.lineTo(m, s - m);
+  ctx.lineTo(s - m, s - m);
+  ctx.lineTo(s - m, s * 0.42);
+  ctx.arc(s / 2, s * 0.42, (s - m * 2) / 2, 0, Math.PI, true);
+  ctx.closePath();
+  ctx.stroke();
+  // zipper
+  ctx.beginPath();
+  ctx.moveTo(m, s * 0.42); ctx.lineTo(s - m, s * 0.42);
+  ctx.stroke();
+  // pull
+  ctx.beginPath();
+  ctx.arc(s * 0.62, s * 0.42, s * 0.05, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// --- render ---
+
+const comfortIcons = [
+  { label: "Shoulder Strap", fn: iconShoulderStrap },
+  { label: "Back Panel",     fn: iconBackPanel },
+  { label: "Laptop Sleeve",  fn: iconLaptopSleeve },
+  { label: "Front Pocket",   fn: iconFrontPocket },
+  { label: "Bottle Pocket",  fn: iconBottlePocket },
+  { label: "Zipper",         fn: iconZipper },
+  { label: "Handle",         fn: iconHandle },
+  { label: "Durable Fabric", fn: iconFabric },
+];
+
+const spaceIcons = [
+  { label: "Main Compartment", fn: iconMainCompartment },
+  { label: "Front Pocket",     fn: iconFrontPocket },
+  { label: "Side Pocket",      fn: iconSidePocket },
+  { label: "Organizer",        fn: iconOrganizerPocket },
+  { label: "Laptop Sleeve",    fn: iconLaptopSleeve },
+  { label: "Document Sleeve",  fn: iconDocumentSleeve },
+  { label: "Raincover",        fn: iconRaincover },
+  { label: "Bottle Pocket",    fn: iconBottlePocket },
+];
+
+const fitsIcons = [
+  { label: "Laptop",   fn: iconLaptopSleeve },
+  { label: "Bottle",   fn: iconBottlePocket },
+  { label: "Books",    fn: iconBooks },
+  { label: "Wallet",   fn: iconWallet },
+  { label: "Charger",  fn: iconCharger },
+  { label: "Pouch",    fn: iconPouch },
+];
+
+function renderGroup(containerId, icons) {
+  const row = document.getElementById(containerId);
+  icons.forEach(({ label, fn }) => {
+    const cell = document.createElement("div");
+    cell.className = "icon-cell";
+    const canvas = makeCanvas(80);
+    drawIcon(canvas, fn);
+    const span = document.createElement("span");
+    span.textContent = label;
+    cell.appendChild(canvas);
+    cell.appendChild(span);
+    row.appendChild(cell);
+  });
+}
+
+renderGroup("comfort-row", comfortIcons);
+renderGroup("space-row", spaceIcons);
+renderGroup("fits-row", fitsIcons);
+</script>
+</body>
+</html>

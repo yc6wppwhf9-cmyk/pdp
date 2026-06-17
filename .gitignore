@@ -1,0 +1,5 @@
+.env.local
+app/local.env
+app/api-key-moved.txt
+app/sk-proj-*.txt
+
