@@ -1128,9 +1128,9 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; iP={...i,space:[]}; }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
           if(L.length){ overlayLabels=L; overlayLayout="bottom"; iP={...i,needItems:""}; } }
-        /* dims: canvas draws the capacity badge — strip it from the AI prompt */
-        if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...i,cap:""}; }
       }
+      /* Capacity badge is ALWAYS canvas-drawn for dims (ensures portrait goes to bottom) */
+      if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...iP,cap:""}; }
       const filesToUse = id === "white" ? filesWhite : files;
       let prompt=refNote(id)+PROMPTS[id](iP);
       if(overlayLabels && overlayLayout==="sides") prompt+=" COMPOSITION: keep the bag centred and leave wide, completely empty background bands on the far left and far right edges of the image.";
