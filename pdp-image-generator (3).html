@@ -432,7 +432,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
       <div class="field"><label class="f-label">Depth (in)</label><input type="number" id="dimD" step="0.5"/></div>
     </div>
     <div class="row2">
-      <div class="field"><label class="f-label">Capacity (litres) <span id="capAutoLabel" style="color:var(--green);font-size:10px;display:none">(auto)</span></label><input type="number" id="capacity" step="0.5" placeholder="auto-calculated from dims"/></div>
+      <div class="field"><label class="f-label">Capacity (litres) <span id="capAutoLabel" style="color:var(--green);font-size:10px;display:none">(auto)</span></label><input type="number" id="capacity" step="0.5" placeholder="auto-calculated from dims" autocomplete="off"/></div>
       <div class="field"><label class="f-label">Age group</label><input type="text" id="ageGroup"/></div>
     </div>
     <div class="row2">
@@ -595,24 +595,26 @@ document.getElementById("quality").addEventListener("change",updateHint);
 updateHint();
 
 /* ---- AUTO CAPACITY from H×W×D ---- */
-let capacityManuallySet = false;
 const capField = document.getElementById("capacity");
 const capAutoLabel = document.getElementById("capAutoLabel");
+/* When user types manually, drop the auto flag so we stop overriding */
 capField.addEventListener("input", () => {
-  capacityManuallySet = capField.value !== "";
-  if (capacityManuallySet) capAutoLabel.style.display = "none";
-  if (!capacityManuallySet) autoCalcCapacity();
+  delete capField.dataset.auto;
+  capAutoLabel.style.display = "none";
 });
 function autoCalcCapacity() {
-  if (capacityManuallySet) return;
+  /* Only auto-fill when the field is empty OR was previously auto-filled */
+  if (capField.value !== "" && capField.dataset.auto !== "1") return;
   const H = parseFloat(document.getElementById("dimH").value);
   const W = parseFloat(document.getElementById("dimW").value);
   const D = parseFloat(document.getElementById("dimD").value);
   if (H > 0 && W > 0 && D > 0) {
     capField.value = Math.round(H * W * D * 0.016387 * 10) / 10;
+    capField.dataset.auto = "1";
     capAutoLabel.style.display = "inline";
-  } else {
+  } else if (capField.dataset.auto === "1") {
     capField.value = "";
+    delete capField.dataset.auto;
     capAutoLabel.style.display = "none";
   }
 }
@@ -879,10 +881,19 @@ function mStep(d){ mIdx=(mIdx+d+mList.length)%mList.length; renderModal(); }
 mPrev.onclick=()=>mStep(-1);
 mNext.onclick=()=>mStep(1);
 document.getElementById("mClose").onclick=closeModal;
+/* Build a download filename slug from brand + product name + image type */
+function prodSlug(typeName){
+  const brand = document.getElementById("brand").value.trim();
+  const pname = document.getElementById("pname").value.trim();
+  const base = [brand, pname].filter(Boolean).join("_") || "pdp";
+  const type = (typeName||"").trim();
+  return [base, type].filter(Boolean).join("_").replaceAll(/\s+/g,"_").replaceAll(/[^a-zA-Z0-9_\-]/g,"");
+}
+
 document.getElementById("mDl").onclick=()=>{
   const a=document.createElement("a");
   a.href=mImg.src;
-  a.download=`${(mName.textContent||"pdp").replaceAll(" ","_")}.png`;
+  a.download=`${prodSlug(mName.textContent)}.png`;
   a.click();
 };
 mImg.addEventListener("click",()=>mImg.classList.toggle("zoomed"));
@@ -923,10 +934,10 @@ document.getElementById("dlAll").onclick=async()=>{
     const card=p.closest(".rcard");
     const img=card.querySelector(".r-img img");
     if(!img) continue;
-    const name=((card.querySelector(".r-name")||{}).textContent||"pdp").replaceAll(" ","_");
+    const typeName=(card.querySelector(".r-name")||{}).textContent||"";
     const a=document.createElement("a");
     a.href=img.src;
-    a.download=`${name}_${String(n++).padStart(2,"0")}.png`;
+    a.download=`${prodSlug(typeName)}_${String(n++).padStart(2,"0")}.png`;
     a.click();
     /* small gap so the browser doesn't block rapid downloads */
     await new Promise(r=>setTimeout(r,450));
@@ -1144,7 +1155,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
       card.querySelector(".r-status").textContent="Done ✓";
       const dl=document.createElement("button");
       dl.className="mini"; dl.textContent="⬇ PNG";
-      dl.onclick=()=>{ const a=document.createElement("a"); a.href=url; a.download=`${(i.brand||"pdp").replaceAll(" ","_")}_${id}.png`; a.click(); };
+      dl.onclick=()=>{ const a=document.createElement("a"); a.href=url; a.download=`${prodSlug(t.name)}.png`; a.click(); };
       card.querySelector(".r-foot").appendChild(dl);
       const re=document.createElement("button");
       re.className="mini"; re.textContent="↻";
