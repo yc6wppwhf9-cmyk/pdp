@@ -119,27 +119,7 @@ function pickFeatures(product, count = 4) {
 
 function buildPrompt(type, product) {
   const featureText = product.features.join(", ");
-  const base = `${product.brand} ${product.productName}`;
-
-  const prompts = {
-    "white-bg": `Create a clean ecommerce product image of the ${base} on a pure white background. The bag must face directly forward — strict front-facing angle, no tilt or 3/4 rotation. Centre the product with even padding on all sides. No shadows, gradients, props, or text overlays. Photorealistic, identical to the uploaded reference image. Suitable for Amazon/Flipkart main image slot.`,
-
-    "hero": `Create a cinematic larger-than-life hero shot of the ${base} for a premium ecommerce PDP. Dark atmospheric background (${product.theme}). Product is the focal point at a powerful 3/4 upward angle with dramatic lighting and bold shadow play. Brand name "${product.brand}" prominently visible. Add aspirational environmental elements — light rays, depth, energy. Highlight 2–3 key features: ${product.features.slice(0, 3).join(", ")}. High contrast, billboard quality, photorealistic.`,
-
-    "lifestyle": `Create a lifestyle scene featuring the ${base} being used naturally by a ${product.audience}. Location and setting should feel authentic and aspirational. The bag is the hero of the scene — clearly visible, not obscured. Natural light, real environment, no studio feel. Theme: ${product.theme}.`,
-
-    "comfort": `Create a close-up detail PDP image of the ${base} highlighting its comfort features: ${featureText}. Show strap padding, breathable back panel, cushion handle, and load points with clear callout labels. Soft background (${product.theme}). Premium product photography style.`,
-
-    "space": `Create a space-story PDP image for the ${base} showing all compartments and pockets with labelled callouts: main compartment, front pocket, side pocket, organiser, and padded laptop sleeve. Capacity: ${product.capacity}. Dimensions: ${product.dimensions}. Clean infographic style with soft background (${product.theme}).`,
-
-    "everything": `Create a features overview PDP image for the ${base} showcasing every included accessory and extra feature: ${featureText}. Show charging port, raincover, charms, and any additional accessories. Soft background (${product.theme}). Clean callout labels, premium ecommerce style.`,
-
-    "dimensions": `Create a dimensions PDP image for the ${base} with measurement annotations clearly showing ${product.dimensions} and capacity ${product.capacity}. Use clean white or light background, dimension lines in brand colour, and both inch and cm values visible. Photorealistic product, no distortion.`,
-
-    "what-fits": `Create a flat-lay PDP image showing what fits inside the ${base} (capacity ${product.capacity}): a laptop, water bottle, books, wallet, charger, and small pouch arranged neatly around or beside the open bag. Clean white background, top-down or slight angle, styled like a premium Amazon listing.`,
-  };
-
-  return prompts[type.id] || `Create a marketplace PDP image for ${base}. Image type: ${type.title}. Theme: ${product.theme}. Audience: ${product.audience}. Features: ${featureText}. Keep the product consistent with the uploaded reference image, premium ecommerce composition, no misleading product changes.`;
+  return `Create a marketplace PDP image for ${product.brand} ${product.productName}. Image type: ${type.title}. Theme: ${product.theme}. Audience: ${product.audience}. Capacity: ${product.capacity}. Dimensions: ${product.dimensions}. Must show: ${featureText}. Keep the product consistent with the uploaded reference image, use premium ecommerce composition, clear readable callouts, and no misleading product changes.`;
 }
 
 function renderCreative(type, product) {

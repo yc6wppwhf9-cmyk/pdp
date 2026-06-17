@@ -1,6 +1,0 @@
-{
-  "outputDirectory": "app",
-  "functions": {
-    "api/generate-image.js": { "maxDuration": 60 }
-  }
-}
