@@ -559,6 +559,10 @@ const FEATURE_ICONS={
   "Papped laptop Sleeve":"assets/icons/16Papped laptop Sleeve.png",
   "Trolley Sleeve":"assets/icons/17Trolley Sleeve.png"
 };
+const FEATURE_ICON_FALLBACKS={
+  "Bartacked Stitch on Load Points":"🧵",
+  "Bottom Rib Pad":"🛡️"
+};
 
 const COMFORT = ["Adjustable Shoulder Straps","Wide Padded Shoulder Straps","Bartacked Stitch on Load Points","Premium Quality Zippers","Breathable Back Panel","Super Soft Cushion Handle","Bottom Rib Pad","Durable Pullers","Lightweight","Premium Vegan Fabric"];
 const SPACE = ["Main Compartment","Front Pocket","Bottle Pocket","Side Zip Pocket","Easy Organiser","Premium Organiser","Padded Laptop Sleeve","Document Sleeve","Small Pocket"];
@@ -1045,26 +1049,10 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
   const ctx=c.getContext("2d"); ctx.drawImage(img,0,0);
   const fontPx=Math.round(W*0.014), radius=W*0.018;
   ctx.textAlign="center"; ctx.textBaseline="middle";
-  const usedIconUrls=new Set();
-  function closestIcon(label){
-    if(!iconMap) return null;
-    const stop=new Set(["pad","rib","load","soft","hard","back","side","front","top","bottom","large","small","extra","dual","inner","outer","zip","bag","pack","with","and","the","on","at","for","in","a","an","of","to","by","pocket","sleeve","strap","straps","panel","handle","fabric"]);
-    const norm=s=>s.toLowerCase().replace(/[^a-z0-9\s]/g,"").split(/\s+/).filter(w=>w.length>=5&&!stop.has(w));
-    const lw=new Set(norm(label));
-    if(lw.size===0) return null;
-    let best=null, bestScore=0;
-    for(const key of Object.keys(iconMap)){
-      if(usedIconUrls.has(iconMap[key])) continue;
-      const score=norm(key).filter(w=>lw.has(w)).length;
-      if(score>bestScore){bestScore=score;best=key;}
-    }
-    return bestScore>0?iconMap[best]:null;
-  }
   async function drawCard(x,y,w,label){
     const _bk=label.replace(/^\d+\s+/,"").replace(/s$/i,"");
     const _exact=iconMap&&(iconMap[label]||iconMap[_bk]||iconMap[_bk+"s"]||iconMap[_bk+"S"]);
-    const _iu=_exact||closestIcon(_bk);
-    if(_iu) usedIconUrls.add(_iu);
+    const _iu=_exact||null;
     const pad=Math.round(w*0.12);
     const iconSz=Math.round(w*0.58);
     ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
@@ -1085,13 +1073,9 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
         ctx.fillText(iconFor(label),x+w/2,y+pad+iconSz/2);
       }
     } else {
-      /* no matching icon — text-only card: vertically centre the label */
-      const tH=lines.length*Math.round(fontPx*1.35);
-      const tY=y+(h-tH)/2+Math.round(fontPx*0.65);
       ctx.fillStyle="#1d3354";
-      ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
-      lines.forEach((ln,k)=>ctx.fillText(ln,x+w/2,tY+k*Math.round(fontPx*1.35)));
-      return h;
+      ctx.font=`${Math.round(iconSz*0.7)}px "Segoe UI Emoji", Archivo, sans-serif`;
+      ctx.fillText((FEATURE_ICON_FALLBACKS&&FEATURE_ICON_FALLBACKS[label])||iconFor(label),x+w/2,y+pad+iconSz/2);
     }
     ctx.fillStyle="#1d3354";
     ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
