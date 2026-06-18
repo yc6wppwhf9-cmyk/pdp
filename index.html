@@ -1086,7 +1086,7 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
     const cardW=Math.round(W*0.115);
     const leftLabels=labels.slice(0,Math.ceil(labels.length/2));
     const rightLabels=labels.slice(Math.ceil(labels.length/2));
-    const margin=W*0.018, gap=H*0.018, topY=H*0.22;
+    const margin=W*0.055, gap=H*0.018, topY=H*0.22;
     let y=topY; for(const l of leftLabels){ y+=await drawCard(margin,y,cardW,l)+gap; }
     y=topY; for(const l of rightLabels){ y+=await drawCard(W-margin-cardW,y,cardW,l)+gap; }
   }else{
