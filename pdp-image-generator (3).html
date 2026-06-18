@@ -850,9 +850,10 @@ const PROMPTS = {
    return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in large clean black modern sans-serif, regular-to-medium weight: "Designed for Everyday Use", with a smaller subtitle below it: "Lightweight. Durable. Reliable.". COMPOSITION: the bags must be LARGE and dominant, occupying roughly the lower 65-72% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. Leave only airy white space around them. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
  },
  fits: i=>{
+   const frontAngleRule = `BAG ANGLE RULE: use the exact same FRONT ANGLE / FRONT VIEW as the first attached product photo. The front panel, front pocket, front artwork, front logo patch and front zipper layout must face the camera. Never show the back panel, shoulder straps, rear padding, rear handle view, side profile or any rotated/back-facing angle.`;
    const itemList = i.fits.length
-     ? `ITEM LIST — EXACT AND COMPLETE: there are EXACTLY ${i.fits.length} items, listed here in order: ${i.fits.join(", ")}. Each item appears EXACTLY ONCE. Do NOT add, remove, duplicate or rename any item. Do NOT add an "& More" tile or any other placeholder.`
-     : `No items — only the bag centered with the title above it.`;
+     ? `ITEM LIST — EXACT AND COMPLETE: there are EXACTLY ${i.fits.length} items, listed here in order: ${i.fits.join(", ")}. Each item appears EXACTLY ONCE. Do NOT add, remove, duplicate or rename any item. Do NOT add an "& More" tile or any other placeholder. ${frontAngleRule}`
+     : `No items — only the bag centered with the title above it. ${frontAngleRule}`;
    return `${BASE(i)} STUDIO FLAT-LAY KNOLLING CATALOGUE SHOT. Pure white #FFFFFF background. Lighting: bright, even, diffused studio light — no harsh shadows, just a very faint soft drop shadow under each item. TITLE: at the very top, "For All Your" in regular-weight dark sans-serif on one line, then "Essentials" in bold accent colour matching the bag on the next line. No title bubble or outline. COMPOSITION — BAG SIZE IS CRITICAL: the bag is the DOMINANT HERO. It must be rendered LARGE — occupying 45-50% of the image height and at least 35% of the image width, standing UPRIGHT and front-facing at the absolute centre. Every surrounding item must be NOTICEABLY SMALLER than the bag — individual items are roughly 15-20% the size of the bag. If the bag feels small or the same size as the items, the image is WRONG. The items are arranged TIGHTLY in four zones surrounding the large bag — above, below, left and right — like a professional product stylist arranged them for a magazine shoot. Items are close to the bag and close to each other, with only a small uniform gap between each item. Items do NOT overlap the bag or each other, but they fill the space fully — there should be NO large empty patches of white. ITEMS: ${itemList} Each item is a clean photorealistic product photographed flat (lying on the surface). Items are colour-coordinated with the bag's colour palette. No text labels on any item.`;
  },
  open: i=>{
@@ -872,9 +873,9 @@ const PROMPTS = {
 /* Describes the role of each attached reference image, in order */
 function refNote(typeId){
   let n=1, s=`Attached reference images, in order:`;
-  if(typeId==="white"){
-    /* White BG: send only the first product photo (front angle) */
-    s+=` (1) product front-facing photo — render this exact bag as shown here, FRONT VIEW only.`;
+  if(typeId==="white" || typeId==="fits"){
+    /* White BG and Fits: send only the first product photo (front angle) */
+    s+=` (1) product front-facing photo — render this exact bag as shown here, FRONT VIEW only. Do not use or invent a back view, rear view, strap view, or side view.`;
     n=2;
     if(logoImg){ s+=` (${n}) the brand logo — for reference only.`; n++; }
   } else {
@@ -1193,7 +1194,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
       }
       /* Capacity badge is ALWAYS canvas-drawn for dims (ensures portrait goes to bottom) */
       if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...iP,cap:""}; }
-      const filesToUse = id === "white" ? filesWhite : files;
+      const filesToUse = (id === "white" || id === "fits") ? filesWhite : files;
       let prompt=refNote(id)+PROMPTS[id](iP);
       if(overlayLabels && overlayLayout==="sides") prompt+=" COMPOSITION: keep the bag centred and leave wide, completely empty background bands on the far left and far right edges of the image.";
       if(overlayLabels && overlayLayout==="bottom") prompt+=" COMPOSITION: keep the bag in the upper two-thirds and leave the bottom quarter of the image as completely empty background.";
