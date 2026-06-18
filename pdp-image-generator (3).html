@@ -836,9 +836,9 @@ const PROMPTS = {
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
    const corners = ["top-LEFT corner","top-RIGHT corner","bottom-LEFT corner","bottom-RIGHT corner"];
    const badgePart = list.length
-     ? `Exactly ${list.length} white rounded badge card${list.length>1?"s":""} arranged in one neat horizontal row at the very BOTTOM of the image, below the bag and not covering the bag, each with a small line icon on top and its label below in small dark text, in this order: ${list.map(b=>`"${b}"`).join(", ")}. Each badge appears exactly once, spelled letter-perfect, no other badges anywhere. The bag stands alone above the badge row with clear separation — the badges exist ONLY in the bottom row, like an icon legend strip.`
+     ? `Exactly ${list.length} white rounded badge card${list.length>1?"s":""} arranged as neat floating side cards: split them between the far LEFT and far RIGHT edges of the image, with a wide empty background band separating each card from the bag. Each card has a small line icon on top and its label below in small dark text, in this order: ${list.map(b=>`"${b}"`).join(", ")}. Each badge appears exactly once, spelled letter-perfect, no other badges anywhere. The bag stands alone in the centre with the bottom fully visible — badges must never cover the bag.`
      : `Do NOT draw any badge cards, feature labels, icons or callouts — only the title and the bag, with clean empty space around the bag.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a simple clean white rounded-rectangle pill outline with a smooth border, never a wavy label or speech bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view, scaled so the full bag remains visible above the bottom badge row. ${badgePart} Soft pastel background matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}. No other text.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a simple clean white rounded-rectangle pill outline with a smooth border, never a wavy label or speech bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view, scaled so the full bag remains visible between side badge columns. ${badgePart} Soft pastel background matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}. No other text.`;
  },
  dims: i=>{
    const m=[];
@@ -1189,7 +1189,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,comfort:[]}; }
         if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,space:[]}; }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
-          if(L.length){ overlayLabels=L; overlayLayout="bottom"; overlayIconMap=FEATURE_ICONS; iP={...i,needItems:""}; } }
+          if(L.length){ overlayLabels=L; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,needItems:""}; } }
       }
       /* Capacity badge is ALWAYS canvas-drawn for dims (ensures portrait goes to bottom) */
       if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...iP,cap:""}; }
