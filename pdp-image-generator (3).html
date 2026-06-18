@@ -462,7 +462,8 @@ input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-
 
   <div class="sec">
     <div class="sec-title">6 · Additional Features</div>
-    <div class="field"><label class="f-label">"Everything You Need" badges (comma separated, first 4 used)</label><input type="text" id="needItems"/></div>
+    <div class="field"><label class="f-label">"Everything You Need" badge choices (first 4 used)</label><div class="chips" id="needChips"></div></div>
+    <div class="field"><label class="f-label">Custom "Everything You Need" badges (comma separated)</label><input type="text" id="needItems"/></div>
     <div class="field"><label class="f-label">Other features (used in Tech Spec callouts etc.)</label><textarea id="extras"></textarea></div>
   </div>
 
@@ -557,7 +558,12 @@ const FEATURE_ICONS={
   "Small Pocket":"assets/icons/15Small Pocket.png",
   "Padded Laptop Sleeve":"assets/icons/16Papped laptop Sleeve.png",
   "Papped laptop Sleeve":"assets/icons/16Papped laptop Sleeve.png",
-  "Trolley Sleeve":"assets/icons/17Trolley Sleeve.png"
+  "Trolley Sleeve":"assets/icons/17Trolley Sleeve.png",
+  "Water Resistant":"assets/icons/20Water resitant.png",
+  "Water Resitant":"assets/icons/20Water resitant.png",
+  "Anti Theft":"assets/icons/21Anti theft.png",
+  "Anti theft":"assets/icons/21Anti theft.png",
+  "Scratch Proof":"assets/icons/22Scratch Proof.png"
 };
 const FEATURE_ICON_FALLBACKS={
   "Bartacked Stitch on Load Points":"🧵",
@@ -567,6 +573,7 @@ const FEATURE_ICON_FALLBACKS={
 const COMFORT = ["Adjustable Shoulder Straps","Wide Padded Shoulder Straps","Bartacked Stitch on Load Points","Premium Quality Zippers","Breathable Back Panel","Super Soft Cushion Handle","Bottom Rib Pad","Durable Pullers","Lightweight","Premium Vegan Fabric"];
 const SPACE = ["Main Compartment","Front Pocket","Bottle Pocket","Side Zip Pocket","Easy Organiser","Premium Organiser","Padded Laptop Sleeve","Document Sleeve","Small Pocket"];
 const FITS = ["Books","Notebooks","Pencil Case","Lunch Box","Water Bottle","Umbrella","Folder","Wallet","Laptop","Tablet","Charger","Headphones","Shirt / Clothes","Power Bank"];
+const NEED = ["Water Resistant","Anti Theft","Scratch Proof"];
 
 const TYPES = [
  {id:"white",  name:"White Background",        d:"Clean front-angle shot on pure white — marketplace main image.", def:false},
@@ -597,6 +604,7 @@ function buildChips(el, arr, withCount){
 buildChips(document.getElementById("comfortChips"),COMFORT);
 buildChips(document.getElementById("spaceChips"),SPACE,true);
 buildChips(document.getElementById("fitsChips"),FITS);
+buildChips(document.getElementById("needChips"),NEED);
 
 const typesEl = document.getElementById("types");
 typesEl.innerHTML = TYPES.map((t,i)=>`
@@ -787,6 +795,7 @@ function chips(el){
 function info(){
   const H=document.getElementById("dimH").value, W=document.getElementById("dimW").value, D=document.getElementById("dimD").value;
   const cm = v=>v?(v*2.54).toFixed(1):"";
+  const needList=[...chips("needChips"),...document.getElementById("needItems").value.split(",").map(s=>s.trim()).filter(Boolean)];
   return {
     brand:document.getElementById("brand").value,
     pname:document.getElementById("pname").value,
@@ -800,7 +809,7 @@ function info(){
     theme:document.getElementById("theme").value,
     comfort:chips("comfortChips"), space:chips("spaceChips"), fits:chips("fitsChips"),
     extras:document.getElementById("extras").value,
-    needItems:document.getElementById("needItems").value,
+    needItems:needList.join(", "),
     modelDesc:document.getElementById("modelDesc").value
   };
 }
@@ -1180,7 +1189,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,comfort:[]}; }
         if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,space:[]}; }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
-          if(L.length){ overlayLabels=L; overlayLayout="bottom"; iP={...i,needItems:""}; } }
+          if(L.length){ overlayLabels=L; overlayLayout="bottom"; overlayIconMap=FEATURE_ICONS; iP={...i,needItems:""}; } }
       }
       /* Capacity badge is ALWAYS canvas-drawn for dims (ensures portrait goes to bottom) */
       if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...iP,cap:""}; }
