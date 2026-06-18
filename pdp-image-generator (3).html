@@ -836,16 +836,16 @@ const PROMPTS = {
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
    const corners = ["top-LEFT corner","top-RIGHT corner","bottom-LEFT corner","bottom-RIGHT corner"];
    const badgePart = list.length
-     ? `Exactly ${list.length} white rounded badge card${list.length>1?"s":""} arranged in a single neat horizontal row along the BOTTOM of the image, beneath the bag, each with a small line icon on top and its label below in small dark text, in this order: ${list.map(b=>`"${b}"`).join(", ")}. Each badge appears exactly once, spelled letter-perfect, no other badges anywhere. The bag stands completely alone above with nothing beside it — the badges exist ONLY in the bottom row, like an icon legend strip.`
+     ? `Exactly ${list.length} white rounded badge card${list.length>1?"s":""} arranged in one neat horizontal row at the very BOTTOM of the image, below the bag and not covering the bag, each with a small line icon on top and its label below in small dark text, in this order: ${list.map(b=>`"${b}"`).join(", ")}. Each badge appears exactly once, spelled letter-perfect, no other badges anywhere. The bag stands alone above the badge row with clear separation — the badges exist ONLY in the bottom row, like an icon legend strip.`
      : `Do NOT draw any badge cards, feature labels, icons or callouts — only the title and the bag, with clean empty space around the bag.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a decorative white rounded outline bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view. ${badgePart} Soft pastel background matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}. No other text.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a simple clean white rounded-rectangle pill outline with a smooth border, never a wavy label or speech bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view, scaled so the full bag remains visible above the bottom badge row. ${badgePart} Soft pastel background matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}. No other text.`;
  },
  dims: i=>{
    const m=[];
    if(i.H) m.push(`Along the far left of the front view, draw a tall thin vertical measurement arrow with arrowheads at top and bottom. Beside it, write "HEIGHT" in bold black uppercase rotated vertically, with "(${i.Hcm} cm)" beside it in smaller text; keep "${i.H} INCHES" available only if there is clear space, never crowding the product.`);
    if(i.W) m.push(`Directly below the front view, draw a thin horizontal dimension arrow spanning the bag width. Under the arrow, centred, write exactly three stacked lines: "WIDTH", "${i.W} INCHES", "(${i.Wcm} cm)" with WIDTH bold and largest.`);
    if(i.D) m.push(`Directly below the side view, draw a thin horizontal dimension arrow spanning the bag depth. Under the arrow, centred, write exactly three stacked lines: "DEPTH", "${i.D} INCHES", "(${i.Dcm} cm)" with DEPTH bold and largest.`);
-   if(i.cap) m.push(`At the lower centre between the two bag views, above the width and depth measurement labels, a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it. It must not overlap any dimension arrow or label.`);
+   if(i.cap) m.push(`In the clean top centre area below the subtitle and above the bag views, a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it. It must not overlap the product, dimension arrows, or dimension labels.`);
    const measurePart = m.length?m.join(" ")+" Show ONLY these measurements — do not invent any other number.":"Do NOT draw any measurement lines, arrows, dimension numbers or capacity badge — only the two bag views.";
    return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in large clean black modern sans-serif, regular-to-medium weight: "Designed for Everyday Use", with a smaller subtitle below it: "Lightweight. Durable. Reliable.". COMPOSITION: the bags must be LARGE and dominant, occupying roughly the lower 65-72% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. Leave only airy white space around them. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
  },
@@ -1100,25 +1100,25 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
     y=topY; for(const l of rightLabels){ y+=await drawCard(W-margin-cardW,y,cardW,l)+gap; }
   }else{
     const n=labels.length, gap=W*0.018, margin=W*0.05;
-    const w=Math.min(W*0.20,(W-2*margin-(n-1)*gap)/n);
+    const w=Math.min(W*0.18,(W-2*margin-(n-1)*gap)/n);
     let x=(W-(w*n+gap*(n-1)))/2;
-    const y=H*0.70;
+    const y=H*0.735;
     for(const l of labels){ await drawCard(x,y,w,l); x+=w+gap; }
   }
   return c.toDataURL("image/png");
 }
 
-/* Draws a guaranteed capacity badge at the bottom centre of the dims image */
+/* Draws a guaranteed capacity badge in the clean top centre of the dims image */
 async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
   const isPortrait = size === "1024x1536";
-  const bW = Math.round(W * (isPortrait ? 0.22 : 0.2));
-  const bH = Math.round(H * (isPortrait ? 0.07 : 0.09));
+  const bW = Math.round(W * (isPortrait ? 0.22 : 0.19));
+  const bH = Math.round(H * (isPortrait ? 0.055 : 0.075));
   const bx = Math.round((W - bW) / 2);
-  const by = Math.round(H * (isPortrait ? 0.895 : 0.67));
+  const by = Math.round(H * (isPortrait ? 0.2 : 0.16));
   const r  = Math.round(bH * 0.22);
   const numSz = Math.round(bH * 0.46);
   const lblSz = Math.round(bH * 0.23);
