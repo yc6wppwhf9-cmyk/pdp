@@ -836,7 +836,7 @@ const PROMPTS = {
    if(i.H) m.push(`Along the far left edge of the front view a thin dark vertical measurement line with small arrowheads at both ends; beside it, written HORIZONTALLY (normal upright reading direction, NOT rotated) in three stacked lines: "HEIGHT", "${i.H} INCHES", "(${i.Hcm} cm)".`);
    if(i.W) m.push(`Below the front view a thin horizontal arrow line spanning its width, labelled underneath in three stacked lines: "WIDTH", "${i.W} INCHES", "(${i.Wcm} cm)".`);
    if(i.D) m.push(`Below the side view a thin horizontal arrow line spanning its depth, labelled underneath in three stacked lines: "DEPTH", "${i.D} INCHES", "(${i.Dcm} cm)".`);
-   if(i.cap) m.push(`In the upper area between the two bags, a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it.`);
+   if(i.cap) m.push(`At the bottom centre between the width and depth measurement labels, a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it.`);
    const measurePart = m.length?m.join(" ")+" Show ONLY these measurements — do not invent any other number.":"Do NOT draw any measurement lines, arrows, dimension numbers or capacity badge — only the two bag views.";
    return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background. Title at top centre in bold dark modern sans-serif: "Designed for Everyday Use", with a lighter grey subtitle below it: "Lightweight. Durable. Reliable.". Show the SAME bag TWICE, standing side by side at equal size: on the LEFT the full FRONT view, on the RIGHT the SIDE profile view of the identical bag. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
  },
@@ -1099,17 +1099,17 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
   return c.toDataURL("image/png");
 }
 
-/* Draws a guaranteed capacity badge centred between the two bag views in the dims image */
+/* Draws a guaranteed capacity badge at the bottom centre of the dims image */
 async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
   const isPortrait = size === "1024x1536";
-  const bW = Math.round(W * 0.17);
-  const bH = Math.round(H * (isPortrait ? 0.075 : 0.115));
+  const bW = Math.round(W * (isPortrait ? 0.22 : 0.2));
+  const bH = Math.round(H * (isPortrait ? 0.07 : 0.09));
   const bx = Math.round((W - bW) / 2);
-  const by = Math.round(H * (isPortrait ? 0.895 : 0.42));
+  const by = Math.round(H * (isPortrait ? 0.895 : 0.735));
   const r  = Math.round(bH * 0.22);
   const numSz = Math.round(bH * 0.46);
   const lblSz = Math.round(bH * 0.23);
