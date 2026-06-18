@@ -1040,8 +1040,10 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
   ctx.textAlign="center"; ctx.textBaseline="middle";
   function closestIcon(label){
     if(!iconMap) return null;
-    const norm=s=>s.toLowerCase().replace(/[^a-z0-9\s]/g,"").split(/\s+/).filter(Boolean);
+    const stop=new Set(["pad","rib","load","soft","hard","back","side","front","top","bottom","large","small","extra","dual","inner","outer","zip","bag","pack","with","and","the","on","at","for","in","a","an","of","to","by"]);
+    const norm=s=>s.toLowerCase().replace(/[^a-z0-9\s]/g,"").split(/\s+/).filter(w=>w.length>=5&&!stop.has(w));
     const lw=new Set(norm(label));
+    if(lw.size===0) return null;
     let best=null, bestScore=0;
     for(const key of Object.keys(iconMap)){
       const score=norm(key).filter(w=>lw.has(w)).length;
@@ -1072,9 +1074,13 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
         ctx.fillText(iconFor(label),x+w/2,y+pad+iconSz/2);
       }
     } else {
+      /* no matching icon — text-only card: vertically centre the label */
+      const tH=lines.length*Math.round(fontPx*1.35);
+      const tY=y+(h-tH)/2+Math.round(fontPx*0.65);
       ctx.fillStyle="#1d3354";
-      ctx.font=`${iconSz}px "Segoe UI Emoji", Archivo, sans-serif`;
-      ctx.fillText(iconFor(label),x+w/2,y+pad+iconSz/2);
+      ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
+      lines.forEach((ln,k)=>ctx.fillText(ln,x+w/2,tY+k*Math.round(fontPx*1.35)));
+      return h;
     }
     ctx.fillStyle="#1d3354";
     ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
