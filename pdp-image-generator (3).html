@@ -830,10 +830,10 @@ const PROMPTS = {
    return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background. Title at top centre in bold dark modern sans-serif: "Designed for Everyday Use", with a lighter grey subtitle below it: "Lightweight. Durable. Reliable.". Show the SAME bag TWICE, standing side by side at equal size: on the LEFT the full FRONT view, on the RIGHT the SIDE profile view of the identical bag. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
  },
  fits: i=>{
-   const panelPart = i.fits.length
-     ? `On the RIGHT half a large white rounded panel titled "Fits All This" containing a neat grid of small photorealistic item thumbnails, each labelled below in tiny text. STRICT ITEM LIST: the grid contains EXACTLY ${i.fits.length} tiles, one per item, in this order: ${i.fits.join(", ")}. NO DUPLICATION: each item appears EXACTLY ONCE — never repeat an item, a tile or a label anywhere in the image, even with different wording or a different thumbnail of the same object. Spell every label letter-perfect. Do NOT add any extra item, extra tile, or an "& More" tile — nothing beyond this list.`
-     : `Do NOT draw any items panel, item thumbnails or item labels — only the title, subtitle and the bag, with clean empty space on the right half.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre in a white rounded outline bubble with the EXACT two-word phrase "CARRY MORE" ("CARRY" dark, "MORE" in accent colour), each word once, nothing repeated${i.fits.length?`, and a subtitle below it reading exactly "Spacious enough to fit everything your child needs for school!"`:" and no subtitle"}. Bag front view on the LEFT half. ${panelPart} Soft pastel background matching the bag colour${i.theme?` with subtle ${i.theme} elements`:""}.`;
+   const itemPart = i.fits.length
+     ? `KNOLLING ITEM RULE — STRICT: arrange EXACTLY ${i.fits.length} items around the bag, one item per slot, in this order: ${i.fits.join(", ")}. Each item appears EXACTLY ONCE as a clean photorealistic flat-lay product shot — never duplicate, rename or substitute any item. Do NOT add any extra item or an "& More" placeholder beyond this list.`
+     : `No items around the bag — only the bag and the title, surrounded by clean white space.`;
+   return `${BASE(i)} KNOLLING FLAT-LAY PRODUCT CATALOGUE — pure white #FFFFFF background throughout. Title at the very top centre: the words "For All Your" in regular-weight dark sans-serif, then "Essentials" in bold accent colour matching the bag — NO bubble outline, clean open typography. The bag is shown UPRIGHT, front-facing, centred in the composition — it is the hero element and occupies roughly one-third of the image area. ${itemPart} The items are arranged in a neat symmetrical knolling grid surrounding the bag — items lie flat on the white surface, photographed from a high overhead angle, each item cleanly separated from every other item and from the bag by equal white breathing room, NEVER overlapping each other or the bag. Each item is lit with soft diffused studio light, casting a very faint natural shadow, and its dominant colour coordinates with the bag's colour palette. Overhead bird's-eye product photography style — not a panel layout, not thumbnails in boxes — every item is a full-scale flat-lay photo sitting freely on the white surface. No text labels on any item. No extra items beyond the strict list above.`;
  },
  open: i=>{
    const callouts = i.space.slice(0,4);
@@ -1038,14 +1038,16 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
   const ctx=c.getContext("2d"); ctx.drawImage(img,0,0);
   const fontPx=Math.round(W*0.014), radius=W*0.018;
   ctx.textAlign="center"; ctx.textBaseline="middle";
+  const usedIconUrls=new Set();
   function closestIcon(label){
     if(!iconMap) return null;
-    const stop=new Set(["pad","rib","load","soft","hard","back","side","front","top","bottom","large","small","extra","dual","inner","outer","zip","bag","pack","with","and","the","on","at","for","in","a","an","of","to","by"]);
+    const stop=new Set(["pad","rib","load","soft","hard","back","side","front","top","bottom","large","small","extra","dual","inner","outer","zip","bag","pack","with","and","the","on","at","for","in","a","an","of","to","by","pocket","sleeve","strap","straps","panel","handle","fabric"]);
     const norm=s=>s.toLowerCase().replace(/[^a-z0-9\s]/g,"").split(/\s+/).filter(w=>w.length>=5&&!stop.has(w));
     const lw=new Set(norm(label));
     if(lw.size===0) return null;
     let best=null, bestScore=0;
     for(const key of Object.keys(iconMap)){
+      if(usedIconUrls.has(iconMap[key])) continue;
       const score=norm(key).filter(w=>lw.has(w)).length;
       if(score>bestScore){bestScore=score;best=key;}
     }
@@ -1053,7 +1055,9 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
   }
   async function drawCard(x,y,w,label){
     const _bk=label.replace(/^\d+\s+/,"").replace(/s$/i,"");
-    const _iu=iconMap&&(iconMap[label]||iconMap[_bk]||iconMap[_bk+"s"]||iconMap[_bk+"S"])||closestIcon(_bk);
+    const _exact=iconMap&&(iconMap[label]||iconMap[_bk]||iconMap[_bk+"s"]||iconMap[_bk+"S"]);
+    const _iu=_exact||closestIcon(_bk);
+    if(_iu) usedIconUrls.add(_iu);
     const pad=Math.round(w*0.12);
     const iconSz=Math.round(w*0.58);
     ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
