@@ -842,7 +842,7 @@ const PROMPTS = {
  },
  dims: i=>{
    const m=[];
-   if(i.H) m.push(`Along the far left of the front view, draw a tall thin vertical measurement arrow with arrowheads at top and bottom. Beside it, write exactly three lines of vertically rotated text (rotated 90 degrees anti-clockwise, reading bottom-to-top), stacked as parallel columns running alongside the arrow: "HEIGHT" in bold black uppercase and largest, then "${i.H} INCHES", then "(${i.Hcm} cm)" in smaller text. All three lines are MANDATORY and must be rendered in full — the inches value must never be omitted, abbreviated or skipped for space, exactly like the WIDTH and DEPTH labels.`);
+   if(i.H) m.push(`To the left of the front view, draw ONLY a tall thin vertical measurement arrow with arrowheads at top and bottom, spanning the full height of the front bag and positioned about 18% in from the left edge. Draw NO text beside this arrow: no "HEIGHT" word, no number, no inches value, no cm value, no unit — nothing. The leftmost 17% of the image must be completely EMPTY plain white space with nothing drawn or written in it. The height measurement text is added afterwards by the app, so writing any height text here is WRONG.`);
    if(i.W) m.push(`Directly below the front view, draw a thin horizontal dimension arrow spanning the bag width. Under the arrow, centred, write exactly three stacked lines: "WIDTH", "${i.W} INCHES", "(${i.Wcm} cm)" with WIDTH bold and largest.`);
    if(i.D) m.push(`Directly below the side view, draw a thin horizontal dimension arrow spanning the bag depth. Under the arrow, centred, write exactly three stacked lines: "DEPTH", "${i.D} INCHES", "(${i.Dcm} cm)" with DEPTH bold and largest.`);
    if(i.cap) m.push(`At the bottom centre of the image, in the open gap above the WIDTH and DEPTH text labels, place a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it. It must stay in the lower band and must not appear near the title or subtitle.`);
@@ -1123,6 +1123,33 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
   return c.toDataURL("image/png");
 }
 
+/* Draws a guaranteed HEIGHT label at the far left of the dims image.
+   Image models reliably garble rotated stacked text ("46 INC6 cm"), so the
+   prompt leaves this band empty and the three columns are rendered here. */
+async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
+  const img = await loadImgEl(dataUrl);
+  const W = img.width, H = img.height;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
+  const cy = H * (size === "1024x1536" ? 0.52 : 0.50);
+  const bigSz = Math.round(W * 0.030);
+  const smSz  = Math.round(W * 0.022);
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  /* each line is its own column, rotated to read bottom-to-top */
+  const col = (xFrac, text, font, fill) => {
+    ctx.save();
+    ctx.translate(W * xFrac, cy);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = font; ctx.fillStyle = fill;
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  };
+  col(0.050, "HEIGHT", `700 ${bigSz}px Archivo, Arial, sans-serif`, "#111111");
+  col(0.095, `${inches} INCHES`, `600 ${smSz}px Archivo, Arial, sans-serif`, "#333333");
+  col(0.133, `(${cmVal} cm)`, `500 ${smSz}px Archivo, Arial, sans-serif`, "#555555");
+  return c.toDataURL("image/png");
+}
+
 /* Draws a guaranteed capacity badge in the lower centre of the dims image */
 async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const img = await loadImgEl(dataUrl);
@@ -1203,7 +1230,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
 
     try{
       /* app-drawn labels: ask the AI for a clean image, overlay cards ourselves */
-      let overlayLabels=null, overlayLayout=null, overlayCapLitres=null, overlayIconMap=null, iP=i;
+      let overlayLabels=null, overlayLayout=null, overlayCapLitres=null, overlayIconMap=null, overlayH=null, iP=i;
       if(document.getElementById("overlayMode").checked){
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,comfort:[]}; }
         if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,space:[]}; }
@@ -1212,6 +1239,8 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
       }
       /* Capacity badge is ALWAYS canvas-drawn for dims (ensures portrait goes to bottom) */
       if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...iP,cap:""}; }
+      /* Height label is ALWAYS canvas-drawn — the model garbles rotated stacked text */
+      if(id==="dims" && i.H){ overlayH={inches:i.H, cm:i.Hcm}; }
       const filesToUse = (id === "white" || id === "fits") ? filesWhite : files;
       let prompt=refNote(id)+PROMPTS[id](iP);
       if(overlayLabels && overlayLayout==="sides") prompt+=" COMPOSITION: keep the bag centred and leave wide, completely empty background bands on the far left and far right edges of the image.";
@@ -1227,6 +1256,10 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
       if(overlayLabels){
         try{ url=await overlayCards(url,overlayLabels,overlayLayout,overlayIconMap); }
         catch(e){ console.warn("overlay failed",e); }
+      }
+      if(overlayH){
+        try{ url=await overlayHeightLabel(url,overlayH.inches,overlayH.cm,size); }
+        catch(e){ console.warn("height label overlay failed",e); }
       }
       if(overlayCapLitres){
         try{ url=await overlayCapacityBadge(url,overlayCapLitres,size); }
