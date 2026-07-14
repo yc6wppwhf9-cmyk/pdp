@@ -1170,25 +1170,45 @@ function findFrontBag(ctx, W, H) {
 }
 
 /* Draws a guaranteed HEIGHT label at the left of the dims image. The model
-   garbles rotated stacked text ("46 INC6 cm") and ignores requests to omit it,
-   so the left margin is wiped and the arrow and label are drawn here instead. */
+   garbles rotated stacked text ("46 INC6 cm"), so the label is drawn here.
+   It also ignores any request to leave a left margin, so rather than depend on
+   its composition, the whole frame is scaled down a few percent and pushed
+   right until the label has room — the added margin is filled with the model's
+   own background colour, so it reads as ordinary padding. */
 async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
-  const c = document.createElement("canvas"); c.width = W; c.height = H;
-  const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
+  const src = document.createElement("canvas"); src.width = W; src.height = H;
+  const sctx = src.getContext("2d"); sctx.drawImage(img, 0, 0);
 
-  const box = findFrontBag(ctx, W, H)
+  const box = findFrontBag(sctx, W, H)
     || { left: Math.round(W * 0.17), top: Math.round(H * 0.26), bottom: Math.round(H * 0.73) };
+
+  /* shrink just enough to open a TARGET-wide strip; k===1 when the model
+     happened to leave enough room already, leaving the frame untouched */
+  const TARGET = 0.15;
+  const k = Math.min(1, (1 - TARGET) * W / Math.max(1, W - box.left));
+  const dx = W * (1 - k), dy = (H - H * k) / 2;
+
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const ctx = c.getContext("2d");
+  const p = sctx.getImageData(2, 2, 1, 1).data;
+  const bg = (p[0] > 240 && p[1] > 240 && p[2] > 240) ? `rgb(${p[0]},${p[1]},${p[2]})` : "#ffffff";
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(src, dx, dy, W * k, H * k);
+
+  /* bag bounds in the recomposed frame */
+  box.left = dx + box.left * k;
+  box.top = dy + box.top * k;
+  box.bottom = dy + box.bottom * k;
+
   const pad = Math.round(W * 0.012);
   const clearW = Math.max(0, box.left - pad);
-  /* too little room to place a legible label — leave the image untouched */
   if (clearW < W * 0.07) return c.toDataURL("image/png");
 
-  /* wipe the model's own arrow/text out of the left margin, staying above the
-     width arrow so it is never clipped */
+  /* wipe anything the model drew in the margin, staying above the width arrow */
   const eraseTop = Math.max(0, box.top - Math.round(H * 0.05));
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = bg;
   ctx.fillRect(0, eraseTop, clearW, (box.bottom - eraseTop) + Math.round(H * 0.01));
 
   /* arrow spanning the bag's true height */
@@ -1205,13 +1225,13 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   };
   headAt(box.top, 1); headAt(box.bottom, -1);
 
-  /* two rotated columns, shrunk to whatever room the model actually left */
+  /* two rotated columns, shrunk further only if the strip is still tight */
   let bigSz = Math.round(W * 0.028), smSz = Math.round(W * 0.020);
   const avail = ax - pad * 2, need = bigSz + pad + smSz;
   if (need > avail) {
-    const k = avail / need;
-    bigSz = Math.max(8, Math.floor(bigSz * k));
-    smSz = Math.max(7, Math.floor(smSz * k));
+    const shrink = avail / need;
+    bigSz = Math.max(8, Math.floor(bigSz * shrink));
+    smSz = Math.max(7, Math.floor(smSz * shrink));
   }
   const cy = (box.top + box.bottom) / 2;
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -1333,13 +1353,15 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         try{ url=await overlayCards(url,overlayLabels,overlayLayout,overlayIconMap); }
         catch(e){ console.warn("overlay failed",e); }
       }
-      if(overlayH){
-        try{ url=await overlayHeightLabel(url,overlayH.inches,overlayH.cm,size); }
-        catch(e){ console.warn("height label overlay failed",e); }
-      }
+      /* capacity badge first: the height overlay may rescale the whole frame,
+         and the badge must ride along with it rather than sit at a stale spot */
       if(overlayCapLitres){
         try{ url=await overlayCapacityBadge(url,overlayCapLitres,size); }
         catch(e){ console.warn("capacity badge overlay failed",e); }
+      }
+      if(overlayH){
+        try{ url=await overlayHeightLabel(url,overlayH.inches,overlayH.cm,size); }
+        catch(e){ console.warn("height label overlay failed",e); }
       }
       card.querySelector(".r-img").innerHTML=`<input type="checkbox" class="r-pick" title="Select for download"/><img src="${url}"/>`;
       card.querySelector(".r-status").textContent="Done ✓";
