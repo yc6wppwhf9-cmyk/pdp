@@ -842,7 +842,7 @@ const PROMPTS = {
  },
  dims: i=>{
    const m=[];
-      if(i.H) m.push(`Along the far left of the front view, draw a tall thin vertical measurement arrow with arrowheads at top and bottom. Beside the arrow, centre one vertically rotated label group containing exactly three stacked lines: "HEIGHT", "${i.H} INCHES", "(${i.Hcm} cm)". Match the WIDTH and DEPTH label styling exactly: HEIGHT bold and largest, with the inches and centimetres lines smaller and regular weight. Keep all three lines together, evenly spaced, clearly legible and outside the product.`);
+   if(i.H) m.push(`Leave the leftmost 16% of the image completely EMPTY — pure plain white space containing no bag, no arrow, no line, no text and no marks of any kind. Do NOT draw a vertical height arrow, and do NOT write the word "HEIGHT" or any height number or unit anywhere in the image. The app draws the height arrow and its measurement itself afterwards.`);
    if(i.W) m.push(`Directly below the front view, draw a thin horizontal dimension arrow spanning the bag width. Under the arrow, centred, write exactly three stacked lines: "WIDTH", "${i.W} INCHES", "(${i.Wcm} cm)" with WIDTH bold and largest.`);
    if(i.D) m.push(`Directly below the side view, draw a thin horizontal dimension arrow spanning the bag depth. Under the arrow, centred, write exactly three stacked lines: "DEPTH", "${i.D} INCHES", "(${i.Dcm} cm)" with DEPTH bold and largest.`);
    if(i.cap) m.push(`At the bottom centre of the image, in the open gap above the WIDTH and DEPTH text labels, place a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it. It must stay in the lower band and must not appear near the title or subtitle.`);
@@ -1123,30 +1123,106 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
   return c.toDataURL("image/png");
 }
 
-/* Draws a guaranteed HEIGHT label at the far left of the dims image.
-   Image models reliably garble rotated stacked text ("46 INC6 cm"), so the
-   prompt leaves this band empty and the three columns are rendered here. */
+/* Locates the front bag by clustering non-white columns, so the height label
+   can be sized and placed against the model's actual composition rather than
+   fixed fractions (the model ignores instructions about where to compose). */
+function findFrontBag(ctx, W, H) {
+  const xMax = Math.round(W * 0.50);
+  const y0 = Math.round(H * 0.12), y1 = Math.round(H * 0.95), bh = y1 - y0;
+  let d;
+  try { d = ctx.getImageData(0, y0, xMax, bh).data; } catch (e) { return null; }
+  const ink = (x, y) => { const i = (y * xMax + x) * 4; return d[i] < 235 || d[i+1] < 235 || d[i+2] < 235; };
+  /* cluster columns across the middle band only — the title sits above it and
+     the width arrow/label below it, so the bag is all that can match here */
+  const mb0 = Math.round(bh * 0.20), mb1 = Math.round(bh * 0.62);
+  const colInk = [];
+  for (let x = 0; x < xMax; x++) {
+    colInk[x] = 0;
+    for (let y = mb0; y < mb1; y++) if (ink(x, y)) { colInk[x] = 1; break; }
+  }
+  const gapMax = Math.max(3, Math.round(W * 0.006));
+  const clusters = []; let cur = null, gap = 0;
+  for (let x = 0; x < xMax; x++) {
+    if (colInk[x]) { if (!cur) cur = { s: x, e: x }; cur.e = x; gap = 0; }
+    else if (cur) { gap++; if (gap > gapMax) { clusters.push(cur); cur = null; gap = 0; } }
+  }
+  if (cur) clusters.push(cur);
+  const bag = clusters.find(c => (c.e - c.s) >= Math.round(W * 0.10));
+  if (!bag) return null;
+  /* bag height = tallest run of inked rows within the bag's columns, which
+     excludes the width arrow and its text sitting below a white gap */
+  const rowInk = [];
+  for (let y = 0; y < bh; y++) {
+    rowInk[y] = 0;
+    for (let x = bag.s; x <= bag.e; x++) if (ink(x, y)) { rowInk[y] = 1; break; }
+  }
+  const yGapMax = Math.max(3, Math.round(H * 0.008));
+  const runs = []; let run = null, yg = 0;
+  for (let y = 0; y < bh; y++) {
+    if (rowInk[y]) { if (!run) run = { s: y, e: y }; run.e = y; yg = 0; }
+    else if (run) { yg++; if (yg > yGapMax) { runs.push(run); run = null; yg = 0; } }
+  }
+  if (run) runs.push(run);
+  let best = null;
+  for (const r of runs) if (!best || (r.e - r.s) > (best.e - best.s)) best = r;
+  if (!best) return null;
+  return { left: bag.s, top: best.s + y0, bottom: best.e + y0 };
+}
+
+/* Draws a guaranteed HEIGHT label at the left of the dims image. The model
+   garbles rotated stacked text ("46 INC6 cm") and ignores requests to omit it,
+   so the left margin is wiped and the arrow and label are drawn here instead. */
 async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
-  const cy = H * (size === "1024x1536" ? 0.52 : 0.50);
-  const bigSz = Math.round(W * 0.030);
-  const smSz  = Math.round(W * 0.022);
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  /* each line is its own column, rotated to read bottom-to-top */
-  const col = (xFrac, text, font, fill) => {
-    ctx.save();
-    ctx.translate(W * xFrac, cy);
-    ctx.rotate(-Math.PI / 2);
-    ctx.font = font; ctx.fillStyle = fill;
-    ctx.fillText(text, 0, 0);
-    ctx.restore();
+
+  const box = findFrontBag(ctx, W, H)
+    || { left: Math.round(W * 0.17), top: Math.round(H * 0.26), bottom: Math.round(H * 0.73) };
+  const pad = Math.round(W * 0.012);
+  const clearW = Math.max(0, box.left - pad);
+  /* too little room to place a legible label — leave the image untouched */
+  if (clearW < W * 0.07) return c.toDataURL("image/png");
+
+  /* wipe the model's own arrow/text out of the left margin, staying above the
+     width arrow so it is never clipped */
+  const eraseTop = Math.max(0, box.top - Math.round(H * 0.05));
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, eraseTop, clearW, (box.bottom - eraseTop) + Math.round(H * 0.01));
+
+  /* arrow spanning the bag's true height */
+  const ax = Math.round(clearW * 0.78);
+  const head = Math.max(4, Math.round(W * 0.008));
+  ctx.strokeStyle = "#111111"; ctx.fillStyle = "#111111";
+  ctx.lineWidth = Math.max(1.5, W * 0.0018);
+  ctx.beginPath(); ctx.moveTo(ax, box.top); ctx.lineTo(ax, box.bottom); ctx.stroke();
+  const headAt = (y, dir) => {
+    ctx.beginPath(); ctx.moveTo(ax, y);
+    ctx.lineTo(ax - head * 0.5, y + head * dir);
+    ctx.lineTo(ax + head * 0.5, y + head * dir);
+    ctx.closePath(); ctx.fill();
   };
-  col(0.050, "HEIGHT", `700 ${bigSz}px Archivo, Arial, sans-serif`, "#111111");
-  col(0.095, `${inches} INCHES`, `600 ${smSz}px Archivo, Arial, sans-serif`, "#333333");
-  col(0.133, `(${cmVal} cm)`, `500 ${smSz}px Archivo, Arial, sans-serif`, "#555555");
+  headAt(box.top, 1); headAt(box.bottom, -1);
+
+  /* two rotated columns, shrunk to whatever room the model actually left */
+  let bigSz = Math.round(W * 0.028), smSz = Math.round(W * 0.020);
+  const avail = ax - pad * 2, need = bigSz + pad + smSz;
+  if (need > avail) {
+    const k = avail / need;
+    bigSz = Math.max(8, Math.floor(bigSz * k));
+    smSz = Math.max(7, Math.floor(smSz * k));
+  }
+  const cy = (box.top + box.bottom) / 2;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const col = (x, text, font, fill) => {
+    ctx.save(); ctx.translate(x, cy); ctx.rotate(-Math.PI / 2);
+    ctx.font = font; ctx.fillStyle = fill; ctx.fillText(text, 0, 0); ctx.restore();
+  };
+  const numX = ax - pad - smSz / 2;
+  const hX = numX - smSz / 2 - pad * 0.6 - bigSz / 2;
+  col(numX, `${inches} INCHES (${cmVal} cm)`, `600 ${smSz}px Archivo, Arial, sans-serif`, "#333333");
+  col(hX, "HEIGHT", `700 ${bigSz}px Archivo, Arial, sans-serif`, "#111111");
   return c.toDataURL("image/png");
 }
 
