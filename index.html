@@ -1184,9 +1184,9 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   const box = findFrontBag(sctx, W, H)
     || { left: Math.round(W * 0.17), top: Math.round(H * 0.26), bottom: Math.round(H * 0.73) };
 
-  /* shrink just enough to open a TARGET-wide strip; k===1 when the model
-     happened to leave enough room already, leaving the frame untouched */
-  const TARGET = 0.15;
+  /* shrink just enough to open a TARGET-wide strip for the three columns;
+     k===1 when the model left enough room already, leaving the frame alone */
+  const TARGET = 0.17;
   const k = Math.min(1, (1 - TARGET) * W / Math.max(1, W - box.left));
   const dx = W * (1 - k), dy = (H - H * k) / 2;
 
@@ -1225,13 +1225,16 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   };
   headAt(box.top, 1); headAt(box.bottom, -1);
 
-  /* two rotated columns, shrunk further only if the strip is still tight */
-  let bigSz = Math.round(W * 0.028), smSz = Math.round(W * 0.020);
-  const avail = ax - pad * 2, need = bigSz + pad + smSz;
+  /* three rotated columns mirroring the WIDTH/DEPTH labels line for line:
+     name bold and largest, then inches, then centimetres */
+  let nameSz = Math.round(W * 0.024), inSz = Math.round(W * 0.021), cmSz = Math.round(W * 0.020);
+  const gap = Math.round(pad * 0.6);
+  const avail = ax - pad * 2, need = nameSz + inSz + cmSz + gap * 2;
   if (need > avail) {
     const shrink = avail / need;
-    bigSz = Math.max(8, Math.floor(bigSz * shrink));
-    smSz = Math.max(7, Math.floor(smSz * shrink));
+    nameSz = Math.max(8, Math.floor(nameSz * shrink));
+    inSz = Math.max(7, Math.floor(inSz * shrink));
+    cmSz = Math.max(7, Math.floor(cmSz * shrink));
   }
   const cy = (box.top + box.bottom) / 2;
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -1239,10 +1242,12 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
     ctx.save(); ctx.translate(x, cy); ctx.rotate(-Math.PI / 2);
     ctx.font = font; ctx.fillStyle = fill; ctx.fillText(text, 0, 0); ctx.restore();
   };
-  const numX = ax - pad - smSz / 2;
-  const hX = numX - smSz / 2 - pad * 0.6 - bigSz / 2;
-  col(numX, `${inches} INCHES (${cmVal} cm)`, `600 ${smSz}px Archivo, Arial, sans-serif`, "#333333");
-  col(hX, "HEIGHT", `700 ${bigSz}px Archivo, Arial, sans-serif`, "#111111");
+  const cmX = ax - pad - cmSz / 2;
+  const inX = cmX - cmSz / 2 - gap - inSz / 2;
+  const nameX = inX - inSz / 2 - gap - nameSz / 2;
+  col(cmX, `(${cmVal} cm)`, `500 ${cmSz}px Archivo, Arial, sans-serif`, "#555555");
+  col(inX, `${inches} INCHES`, `600 ${inSz}px Archivo, Arial, sans-serif`, "#333333");
+  col(nameX, "HEIGHT", `700 ${nameSz}px Archivo, Arial, sans-serif`, "#111111");
   return c.toDataURL("image/png");
 }
 
