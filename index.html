@@ -575,6 +575,27 @@ const SPACE = ["Main Compartment","Front Pocket","Bottle Pocket","Side Zip Pocke
 const FITS = ["Books","Notebooks","Pencil Case","Lunch Box","Water Bottle","Umbrella","Folder","Wallet","Laptop","Tablet","Charger","Headphones","Shirt / Clothes","Power Bank"];
 const NEED = ["Water Resistant","Anti Theft","Scratch Proof"];
 
+/* Hard-shell trolley luggage has no straps or back panel, so it needs its own
+   chip sets and prompt wording rather than the backpack defaults. */
+const LUGGAGE_COMFORT = ["TSA Lock","Combination Lock","Flexi PP Shell","Silent 360° Dual Wheels","Telescopic Handle","Sturdy Handle","10 Years Warranty","Lightweight"];
+/* soft wheeled duffels have no moulded shell, so swap it for fabric claims */
+const DUFFEL_COMFORT = ["TSA Lock","Combination Lock","Premium Vegan Fabric","Silent 360° Dual Wheels","Telescopic Handle","Sturdy Handle","Bartacked Stitch on Load Points","10 Years Warranty","Lightweight"];
+const LUGGAGE_SPACE = ["Main Compartment","Zip Divider","Elastic Packing Straps","Zipped Mesh Pocket","Interior Lining","Front Pocket"];
+const LUGGAGE_FITS = ["Shoes","Toiletries Pouch","Shirt / Clothes","Trousers","Jacket","Laptop","Charger","Wallet","Travel Documents","Toiletries","Towel","Power Bank"];
+const LUGGAGE_NEED = ["Water Resistant","Anti Theft","Scratch Proof"];
+
+/* wheels + telescopic handle — drives the luggage prompt wording and chips */
+const LUGGAGE_TYPES = ["Trolley Bag","Duffel Bag"];
+/* moulded shell that folds open into two halves; soft duffels do not */
+const HARD_CASE_TYPES = ["Trolley Bag"];
+function bagTypeVal(){ return document.getElementById("bagType").value; }
+function isLuggage(){ return LUGGAGE_TYPES.includes(bagTypeVal()); }
+function isHardCase(){ return HARD_CASE_TYPES.includes(bagTypeVal()); }
+function chipSets(){
+  if(!isLuggage()) return {comfort:COMFORT, space:SPACE, fits:FITS, need:NEED};
+  return {comfort: isHardCase()?LUGGAGE_COMFORT:DUFFEL_COMFORT, space:LUGGAGE_SPACE, fits:LUGGAGE_FITS, need:LUGGAGE_NEED};
+}
+
 const TYPES = [
  {id:"white",  name:"White Background",        d:"Clean front-angle shot on pure white — marketplace main image.", def:false},
  {id:"hero",   name:"AI Hero Shot",            d:"Larger-than-life themed scene ", def:true},
@@ -591,6 +612,10 @@ const TYPES = [
 /* ================= UI BUILD ================= */
 function buildChips(el, arr, withCount){
   el.innerHTML = arr.map(t=>`<span class="chip" data-v="${t}">${t}${withCount?'<input class="chip-n" type="number" min="2" max="9" placeholder="Qty" title="How many? e.g. 2 = the bag has 2 of these (optional)"/>':""}</span>`).join("");
+  /* the listener lives on the container, which survives innerHTML — bind once
+     or a rebuild would stack handlers and toggle each chip twice */
+  if(el.dataset.bound==="1") return;
+  el.dataset.bound="1";
   el.addEventListener("click",e=>{
     if(e.target.classList.contains("chip-n")) return;
     const c=e.target.closest(".chip");
@@ -601,10 +626,16 @@ function buildChips(el, arr, withCount){
     }
   });
 }
-buildChips(document.getElementById("comfortChips"),COMFORT);
-buildChips(document.getElementById("spaceChips"),SPACE,true);
-buildChips(document.getElementById("fitsChips"),FITS);
-buildChips(document.getElementById("needChips"),NEED);
+function rebuildChips(){
+  const s=chipSets();
+  buildChips(document.getElementById("comfortChips"),s.comfort);
+  buildChips(document.getElementById("spaceChips"),s.space,true);
+  buildChips(document.getElementById("fitsChips"),s.fits);
+  buildChips(document.getElementById("needChips"),s.need);
+}
+rebuildChips();
+/* backpack and luggage have different features, so swap the chips with the type */
+document.getElementById("bagType").addEventListener("change",rebuildChips);
 
 const typesEl = document.getElementById("types");
 typesEl.innerHTML = TYPES.map((t,i)=>`
@@ -814,17 +845,20 @@ function info(){
   };
 }
 
-const BASE = i => `ABSOLUTE PRODUCT FIDELITY — THIS IS A COMPOSITING TASK, NOT A DESIGN TASK: the bag in the output must be THE IDENTICAL physical ${i.bagType.toLowerCase()} shown in the attached product reference photos, as if those photos were cut out and re-lit in a new scene. Match ONE-TO-ONE: overall silhouette and proportions, every panel and seam, the exact number, size and position of pockets and zippers, zipper pullers, straps, handle shape, stitching, materials and textures, the brand label/badge in its exact position, colour [${i.colour||"exactly as shown in the photos"}] and any print pattern. Pay special attention to ACCENT COLOURS: any contrast-coloured zippers, piping, trims, linings or panels visible in the reference photos MUST appear in the same colour, same position and same brightness — never turn an accent-coloured part black or grey, even in dark or moody lighting. Do NOT invent, redesign, recolour, simplify, add or remove ANY part of the bag — if a detail is not visible in the reference photos, keep it plain and neutral rather than inventing one. Before finishing, verify the generated bag would be recognised as the same product as the reference photos by its owner.${i.brand?` Brand: ${i.brand}${i.pname?` "${i.pname}"`:""}.`:""} Professional Amazon/Flipkart PDP listing image, high resolution, crisp studio quality. Every word of text must be spelled EXACTLY as specified below in clean modern sans-serif type — no extra text, no gibberish, no invented words. TEXT IS PLAIN TYPE, NEVER MARKUP: render only the literal words specified. Never draw an angle bracket, chevron, slash, tag, asterisk, underscore, brace, pipe or any other stray punctuation or code-like character next to, between or around the words — colour changes are applied by simply typing the word in that colour, never by drawing a marker of any kind around it. SINGLE PRODUCT ONLY: the background must never contain anything product-shaped — never draw a second, enlarged, blurred, faded, ghosted, silhouetted or watermark copy of the bag behind, around or bleeding off the edges of the main product. The background stays a plain clean surface. (Render more than one view of the product only where this brief explicitly asks for it.) PERMANENT DESIGN RULE — NO POINTING: never draw a callout line, leader line, connector stroke, stem, tick, bracket or dot that points at, reaches towards, or touches the product. Every label, card and badge is a fully detached, closed element floating with plain clean background between it and the product. The ONLY exception is a measurement arrow if one is explicitly specified later in this brief — nothing else may form a line.`;
+const BASE = i => `ABSOLUTE PRODUCT FIDELITY — THIS IS A COMPOSITING TASK, NOT A DESIGN TASK: the bag in the output must be THE IDENTICAL physical ${i.bagType.toLowerCase()} shown in the attached product reference photos, as if those photos were cut out and re-lit in a new scene. Match ONE-TO-ONE: overall silhouette and proportions, every panel and seam, the exact number, size and position of pockets and zippers, zipper pullers, straps, handle shape, stitching, materials and textures, the brand label/badge in its exact position, colour [${i.colour||"exactly as shown in the photos"}] and any print pattern. Pay special attention to ACCENT COLOURS: any contrast-coloured zippers, piping, trims, linings or panels visible in the reference photos MUST appear in the same colour, same position and same brightness — never turn an accent-coloured part black or grey, even in dark or moody lighting. Do NOT invent, redesign, recolour, simplify, add or remove ANY part of the bag — if a detail is not visible in the reference photos, keep it plain and neutral rather than inventing one. Before finishing, verify the generated bag would be recognised as the same product as the reference photos by its owner.${i.brand?` Brand: ${i.brand}${i.pname?` "${i.pname}"`:""}.`:""} Professional Amazon/Flipkart PDP listing image, high resolution, crisp studio quality. Every word of text must be spelled EXACTLY as specified below in clean modern sans-serif type — no extra text, no gibberish, no invented words. TITLE SCALE — KEEP HEADINGS SMALL: any title, subtitle or heading is set in a modest, restrained size. The whole title block (including any bubble or pill around it) must occupy no more than about 12% of the image height and no more than 60% of the image width, sitting compactly at the top with generous clear space around it. The PRODUCT is always the visual hero and must be the largest, most dominant element — never let a heading compete with it or spread across the full width. TEXT IS PLAIN TYPE, NEVER MARKUP: render only the literal words specified. Never draw an angle bracket, chevron, slash, tag, asterisk, underscore, brace, pipe or any other stray punctuation or code-like character next to, between or around the words — colour changes are applied by simply typing the word in that colour, never by drawing a marker of any kind around it. SINGLE PRODUCT ONLY: the background must never contain anything product-shaped — never draw a second, enlarged, blurred, faded, ghosted, silhouetted or watermark copy of the bag behind, around or bleeding off the edges of the main product. The background stays a plain clean surface. (Render more than one view of the product only where this brief explicitly asks for it.) PERMANENT DESIGN RULE — NO POINTING: never draw a callout line, leader line, connector stroke, stem, tick, bracket or dot that points at, reaches towards, or touches the product. Every label, card and badge is a fully detached, closed element floating with plain clean background between it and the product. The ONLY exception is a measurement arrow if one is explicitly specified later in this brief — nothing else may form a line.`;
 
 const PROMPTS = {
  white: i=>`${BASE(i)} IMPORTANT: Only ONE product photo is attached — use it exactly as captured. Render ONLY the bag in a STRAIGHT FRONT VIEW (facing the camera directly, not angled), perfectly centred on a pure white #FFFFFF background with a soft natural contact shadow under the base. No text, no props, no badges, no logo overlays. Clean marketplace main-image.`,
  hero: i=>`${BASE(i)} CINEMATIC LARGER-THAN-LIFE HERO SHOT — photorealistic composite photography style, NOT an illustration or 3D render. The bag stands as a COLOSSAL MONUMENT 5–8 storeys tall, composited into a real-world location that perfectly matches the bag's personality${i.theme?`: the setting is directly inspired by "${i.theme}" (scenery direction only — NEVER write this phrase as text anywhere in the image)`:`, chosen based on the bag's own print, colour and character`}.${i.age?` The scene must feel exciting and magical to ${i.age}-year-olds.`:""} SCALE: at the base of the giant bag, tiny real-looking people — pedestrians, students, commuters, or fans (whichever suits the setting) — are going about their normal lives, completely dwarfed by the bag. Their human scale makes the enormity of the bag dramatic and awe-inspiring, exactly like a real-world installation or landmark. CAMERA ANGLE: slightly low, wide-angle lens looking upward at the bag against the sky or backdrop — the bag fills the frame from ground to top edge. LIGHTING: fully photoreal, cinematic natural light (golden hour, overcast drama, or bright midday depending on setting) with a realistic shadow cast by the bag onto the ground beneath it. The background environment — whether a sports stadium, prehistoric jungle, shopping mall, university campus, cityscape, beach or any other real place — must look completely photoreal, with authentic textures, correct perspective, and real atmospheric depth. ${i.pname?`The spirit of the product range "${i.pname}" should be felt in the choice of location and mood (location inspiration only — never written as text).`:""} ZERO text in the image — no overlaid brand wordmarks, no captions, no signage invented for the bag — only text that naturally exists in the real-world environment and only the bag's own printed branding exactly as it appears on the product.`,
- life: i=>`${BASE(i)} Photorealistic LIFESTYLE photo: a ${i.model==="No model"?"natural scene with the bag placed believably":"happy "+i.model.toLowerCase()+" wearing the bag on BOTH shoulders, looking back over the shoulder and smiling at camera"}${i.age?` (clearly age ${i.age})`:""}, at ${i.bg||"a bright, tidy everyday Indian setting"}.${i.model!=="No model"&&i.modelDesc?` MODEL APPEARANCE: ${i.modelDesc}. The person must be an entirely fictional, generic individual matching this description — not a real or recognisable person.`:""} CRITICAL SCALE: the bag must be ${i.H||"correctly"} ${i.H?"inches tall":""} relative to the model's torso — not too big, not too small. Natural window light, shallow depth of field. ${i.age?`A small rounded purple badge in the top-left corner reads exactly "AGE: ${i.age}".`:`No badges, no overlays and no text anywhere in the image.`}`,
+ life: i=>`${BASE(i)} Photorealistic LIFESTYLE photo: a ${i.model==="No model"?"natural scene with the bag placed believably":"happy "+i.model.toLowerCase()+(isLuggage()?" walking while pulling the bag along by its fully extended telescopic handle, the bag upright on its wheels beside them, glancing back and smiling at camera":" wearing the bag on BOTH shoulders, looking back over the shoulder and smiling at camera")}${i.age?` (clearly age ${i.age})`:""}, at ${i.bg||(isLuggage()?"a bright, tidy airport terminal or hotel lobby":"a bright, tidy everyday Indian setting")}.${i.model!=="No model"&&i.modelDesc?` MODEL APPEARANCE: ${i.modelDesc}. The person must be an entirely fictional, generic individual matching this description — not a real or recognisable person.`:""} CRITICAL SCALE: the bag must be ${i.H||"correctly"} ${i.H?"inches tall":""} relative to the model's torso — not too big, not too small. Natural window light, shallow depth of field. ${i.age?`A small rounded purple badge in the top-left corner reads exactly "AGE: ${i.age}".`:`No badges, no overlays and no text anywhere in the image.`}`,
  comfort: i=>{
    const cardPart = i.comfort.length
      ? `EXACTLY ${i.comfort.length} small white rounded feature cards arranged in two neat vertical columns — one column down the far LEFT edge of the image, one down the far RIGHT edge, half the cards in each — each card containing a tiny line icon of the feature on top and the feature name below in small dark text, one card per feature, each appearing exactly once, spelled letter-perfect, no extra cards: ${i.comfort.join(", ")}. These are floating legend cards in a card-grid design, NOT a callout diagram: each card is a fully closed shape, and a wide band of plain empty background separates the columns from the bag — absolutely nothing is drawn in that gap. FINAL CHECK: this image contains ZERO lines anywhere — if any stroke connects or reaches from a card towards the bag, the image is WRONG.`
      : `Do NOT draw any callout cards, feature labels or icons — only the title and the bag, with clean empty space around it.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these four words and nothing else: Comfort That Carries Well — the words Comfort That in dark text, the words Carries Well in an accent colour, separated by single plain spaces with no character of any kind before, between or after them. Below, the BACK VIEW of the bag perfectly centred showing back panel and straps. ${cardPart} Background: ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel tone matching the bag's main colour"+(i.theme?` with subtle 3D ${i.theme} elements at the bottom`:'')}. Premium kids-catalogue style.`;
+   const viewPart = isLuggage()
+     ? `Below, the bag perfectly centred at a three-quarter angle with the telescopic handle FULLY EXTENDED upward and all wheels clearly visible on the floor, exactly as the reference photos show them.`
+     : `Below, the BACK VIEW of the bag perfectly centred showing back panel and straps.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these four words and nothing else: Comfort That Carries Well — the words Comfort That in dark text, the words Carries Well in an accent colour, separated by single plain spaces with no character of any kind before, between or after them. ${viewPart} ${cardPart} Background: ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel tone matching the bag's main colour"+(i.theme?` with subtle 3D ${i.theme} elements at the bottom`:'')}. Premium kids-catalogue style.`;
  },
  space: i=>{
    const cardPart = i.space.length
@@ -847,7 +881,7 @@ const PROMPTS = {
    if(i.D) m.push(`Directly below the side view, draw a thin horizontal dimension arrow spanning the bag depth. Under the arrow, centred, write exactly three stacked lines: "DEPTH", "${i.D} INCHES", "(${i.Dcm} cm)" with DEPTH bold and largest.`);
    if(i.cap) m.push(`At the bottom centre of the image, in the open gap above the WIDTH and DEPTH text labels, place a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it. It must stay in the lower band and must not appear near the title or subtitle.`);
    const measurePart = m.length?m.join(" ")+" Show ONLY these measurements — do not invent any other number.":"Do NOT draw any measurement lines, arrows, dimension numbers or capacity badge — only the two bag views.";
-   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in large clean black modern sans-serif, regular-to-medium weight: "Designed for Everyday Use", with a smaller subtitle below it: "Lightweight. Durable. Reliable.". COMPOSITION: the bags must be LARGE and dominant, occupying roughly the lower 65-72% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. Leave only airy white space around them. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
+   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in clean black modern sans-serif, regular-to-medium weight and a restrained, compact size: "Designed for Everyday Use", with a smaller subtitle below it: "Lightweight. Durable. Reliable.". COMPOSITION: the bags must be LARGE and dominant, occupying roughly the lower 65-72% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. Leave only airy white space around them. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
  },
  fits: i=>{
    const frontAngleRule = `BAG ANGLE RULE: use the exact same FRONT ANGLE / FRONT VIEW as the first attached product photo. The front panel, front pocket, front artwork, front logo patch and front zipper layout must face the camera. Never show the back panel, shoulder straps, rear padding, rear handle view, side profile or any rotated/back-facing angle.`;
@@ -862,7 +896,11 @@ const PROMPTS = {
    const labelList = callouts.length
      ? `TEXT RULES — FOLLOW EXACTLY: there are EXACTLY ${callouts.length} text labels in this image, no more, no fewer, and no label is ever repeated. ${callouts.map((c,idx)=>`Label ${idx+1}, placed in the ${posNames[idx]}, reads exactly "${c.toUpperCase()}"`).join(". ")}. Each label is ONE single line of small uppercase letter-spaced white sans-serif text, spelled letter-perfect with no extra characters or symbols, floating freely in the dark background near its matching part of the bag. Draw NO connector lines, NO pointer lines, NO arrows, NO brackets and NO leader lines — nothing connects or points from a label to the bag. Labels sit only in empty dark background, never overlapping the bag. Apart from these ${callouts.length} labels and the bag's own printed branding, the image contains ZERO other text, letters, numbers or symbols.`
      : `TEXT RULES: this image contains ZERO text, labels, lines or arrows of any kind (only the bag's own printed branding) — leave clean dark space around the bag.`;
-   return `${BASE(i)} PREMIUM DARK SPOTLIGHT PRODUCT SHOT with minimal callouts. Background: deep charcoal-to-black vertical gradient with a single soft cone of white light beaming down from directly above, faint dust particles glowing inside the beam. The bag FLOATS slightly above a glossy dark floor that shows a soft mirror reflection of the bag fading downward. Bag at three-quarter front angle. CRITICAL OPEN-BAG POSE: EVERY compartment is unzipped and gaping WIDE open at the same time — the main compartment lid folds back showing the interior lining and organiser, the second compartment gapes open behind it, the front pocket hangs fully open, and both side mesh bottle pockets are pushed outward — the complete storage anatomy visible in one photograph, every part physically true to the actual product, open zippers with pullers hanging naturally. ${labelList} LIGHTING RULE: even though the scene is dark and moody, the bag itself sits fully inside the bright spotlight cone and is lit like a studio product photo — its true colours stay saturated and clearly readable, especially any contrast-coloured zippers, trims and the brand badge from the reference photos; only the BACKGROUND is dark, never the bag. Dramatic, premium, photorealistic.`;
+   return `${BASE(i)} PREMIUM DARK SPOTLIGHT PRODUCT SHOT with minimal callouts. Background: deep charcoal-to-black vertical gradient with a single soft cone of white light beaming down from directly above, faint dust particles glowing inside the beam. The bag FLOATS slightly above a glossy dark floor that shows a soft mirror reflection of the bag fading downward. Bag at three-quarter front angle. ${isLuggage()
+     ? (isHardCase()
+       ? `CRITICAL OPEN-LUGGAGE POSE: the case is unzipped all the way round and folded OPEN like a clamshell into its two halves, standing upright on its wheels — one half shows the main packing compartment with its elastic packing straps, the other shows the zipped divider panel and interior lining, and the telescopic handle is fully extended above. The complete storage anatomy is visible in one photograph, every part physically true to the actual product, open zippers with pullers hanging naturally.`
+       : `CRITICAL OPEN-LUGGAGE POSE: the soft bag rests upright on its wheels with the telescopic handle fully extended above, and its main zip is opened WIDE along the top so the mouth of the bag gapes open — the interior lining, packing straps and any inner pockets are clearly visible inside, and every outer pocket is unzipped and open too. The bag keeps its natural soft slouch and is NEVER folded flat into two rigid halves. The complete storage anatomy is visible in one photograph, every part physically true to the actual product, open zippers with pullers hanging naturally.`)
+     : `CRITICAL OPEN-BAG POSE: EVERY compartment is unzipped and gaping WIDE open at the same time — the main compartment lid folds back showing the interior lining and organiser, the second compartment gapes open behind it, the front pocket hangs fully open, and both side mesh bottle pockets are pushed outward — the complete storage anatomy visible in one photograph, every part physically true to the actual product, open zippers with pullers hanging naturally.`} ${labelList} LIGHTING RULE: even though the scene is dark and moody, the bag itself sits fully inside the bright spotlight cone and is lit like a studio product photo — its true colours stay saturated and clearly readable, especially any contrast-coloured zippers, trims and the brand badge from the reference photos; only the BACKGROUND is dark, never the bag. Dramatic, premium, photorealistic.`;
  },
  tech: i=>{
    const callouts = [...i.comfort, ...i.space, ...(i.extras?i.extras.split(/[,\n]/).map(s=>s.trim()).filter(Boolean):[])].slice(0,7);
@@ -1050,6 +1088,13 @@ function compressImage(file, maxDimension = 1024, maxBytes = 500 * 1024) {
 
 /* ============ APP-DRAWN LABEL OVERLAY (canvas) ============ */
 const ICON_MAP=[
+  /* luggage terms first — these must beat the generic backpack rules below
+     (e.g. "Telescopic Handle" would otherwise match /handle/ and show ✋) */
+  [/tsa|combination lock|\block\b/i,"🔒"],[/wheel|spinner|360/i,"🛞"],
+  [/telescopic|trolley/i,"🧳"],[/shell|polycarbonate|\bpp\b/i,"🛡️"],
+  [/warrant|guarantee/i,"📜"],[/packing strap|elastic/i,"🎗️"],[/divider/i,"🗂️"],[/lining/i,"🧶"],
+  [/shoe/i,"👟"],[/toiletr/i,"🧼"],[/trouser|jeans/i,"👖"],[/jacket/i,"🧥"],
+  [/towel/i,"🧻"],[/passport|travel document/i,"🛂"],
   [/bottle/i,"🧴"],[/laptop/i,"💻"],[/organi[sz]er/i,"🗂️"],[/compartment/i,"📦"],
   [/pocket/i,"👝"],[/strap/i,"🎒"],[/handle/i,"✋"],[/zip/i,"🧷"],[/light/i,"🪶"],
   [/pad|cushion/i,"🛏️"],[/stitch|bartack/i,"🧵"],[/puller/i,"🔩"],[/sleeve|document/i,"💼"],
@@ -1251,7 +1296,28 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   return c.toDataURL("image/png");
 }
 
-/* Draws a guaranteed capacity badge in the lower centre of the dims image */
+/* Finds the horizontal WIDTH/DEPTH measurement arrow — the longest horizontal
+   run of dark pixels in the lower part of the image — so the capacity badge can
+   sit clear of it instead of landing on top of the line. */
+function findWidthArrowY(ctx, W, H) {
+  const y0 = Math.round(H * 0.55), y1 = Math.round(H * 0.95);
+  let d;
+  try { d = ctx.getImageData(0, y0, W, y1 - y0).data; } catch (e) { return null; }
+  const minRun = Math.round(W * 0.18);
+  for (let y = 0; y < y1 - y0; y++) {
+    let run = 0, gap = 0;
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      if (d[i] < 170 && d[i + 1] < 170 && d[i + 2] < 170) { run++; gap = 0; }
+      else if (run) { if (++gap > 4) { if (run >= minRun) return y + y0; run = 0; gap = 0; } }
+    }
+    if (run >= minRun) return y + y0;
+  }
+  return null;
+}
+
+/* Draws a guaranteed capacity badge in the lower centre of the dims image,
+   resting just above the width/depth arrow rather than across it. */
 async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
@@ -1261,7 +1327,10 @@ async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const bW = Math.round(W * (isPortrait ? 0.2 : 0.17));
   const bH = Math.round(H * (isPortrait ? 0.052 : 0.068));
   const bx = Math.round((W - bW) / 2);
-  const by = Math.round(H * (isPortrait ? 0.82 : 0.755));
+  const arrowY = findWidthArrowY(ctx, W, H);
+  const by = arrowY !== null
+    ? Math.round(arrowY - bH - H * 0.012)
+    : Math.round(H * (isPortrait ? 0.82 : 0.755));
   const r  = Math.round(bH * 0.22);
   const numSz = Math.round(bH * 0.46);
   const lblSz = Math.round(bH * 0.23);
