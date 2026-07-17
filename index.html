@@ -1125,8 +1125,9 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
     const pad=Math.round(w*0.08);
     const iconSz=Math.round(w*0.78);
     ctx.font=`600 ${fontPx}px Archivo, Arial, sans-serif`;
-    const dispLabel=label.replace(/^\d+\s+/,"");
-    const lines=wrapLines(ctx,dispLabel,w-pad*2);
+    /* keep any leading count — "2 Main Compartments" is the whole point of the
+       qty box; only the icon lookup above strips it */
+    const lines=wrapLines(ctx,label,w-pad*2);
     const h=pad+iconSz+Math.round(pad*0.5)+lines.length*Math.round(fontPx*1.35)+pad;
     ctx.save();
     ctx.shadowColor="rgba(20,40,70,0.22)"; ctx.shadowBlur=W*0.014; ctx.shadowOffsetY=W*0.005;
