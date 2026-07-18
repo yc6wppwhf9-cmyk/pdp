@@ -1318,7 +1318,8 @@ function findWidthArrowY(ctx, W, H) {
 }
 
 /* Draws a guaranteed capacity badge in the lower centre of the dims image,
-   resting just above the width/depth arrow rather than across it. */
+   sitting just below the width/depth arrow, in the empty gap between the
+   centred WIDTH and DEPTH labels. */
 async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
@@ -1330,7 +1331,7 @@ async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const bx = Math.round((W - bW) / 2);
   const arrowY = findWidthArrowY(ctx, W, H);
   const by = arrowY !== null
-    ? Math.round(arrowY - bH - H * 0.012)
+    ? Math.round(arrowY + H * 0.012)
     : Math.round(H * (isPortrait ? 0.82 : 0.755));
   const r  = Math.round(bH * 0.22);
   const numSz = Math.round(bH * 0.46);
