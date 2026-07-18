@@ -875,13 +875,10 @@ const PROMPTS = {
    return `${BASE(i)} Catalogue infographic. Title at top centre inside a simple clean white rounded-rectangle pill outline with a smooth border, never a wavy label or speech bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view, scaled so the full bag remains visible between side badge columns. ${badgePart} Background: a flat, plain, evenly-lit soft pastel surface matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}, filling the frame edge to edge — the bag appears ONCE and the background behind it is empty, containing no enlarged, faded or ghosted second bag and nothing else bag-shaped. No other text.`;
  },
  dims: i=>{
-   const m=[];
-   if(i.H) m.push(`Leave the leftmost 16% of the image completely EMPTY — pure plain white space containing no bag, no arrow, no line, no text and no marks of any kind. Do NOT draw a vertical height arrow, and do NOT write the word "HEIGHT" or any height number or unit anywhere in the image. The app draws the height arrow and its measurement itself afterwards.`);
-   if(i.W) m.push(`Directly below the front view, draw a thin horizontal dimension arrow spanning the bag width. Under the arrow, centred, write exactly two stacked lines: "WIDTH" in bold, then "${i.W} IN (${i.Wcm} CM)" in smaller regular weight.`);
-   if(i.D) m.push(`Directly below the side view, draw a thin horizontal dimension arrow spanning the bag depth. Under the arrow, centred, write exactly two stacked lines: "DEPTH" in bold, then "${i.D} IN (${i.Dcm} CM)" in smaller regular weight.`);
-   if(i.cap) m.push(`At the bottom centre of the image, in the open gap above the WIDTH and DEPTH text labels, place a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it. It must stay in the lower band and must not appear near the title or subtitle.`);
-   const measurePart = m.length?m.join(" ")+" Show ONLY these measurements — do not invent any other number.":"Do NOT draw any measurement lines, arrows, dimension numbers or capacity badge — only the two bag views.";
-   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in a clean modern geometric sans-serif (like Outfit or Poppins), bold and a restrained, compact size, in a bright hot magenta-pink colour: "Designed for Everyday Use". Below it a smaller dark-charcoal subtitle in the same font: "Lightweight. Durable. Reliable.". Render ONLY those exact words — spell "Everyday" and "Reliable" correctly, and never draw any colour name, hex code, "#" symbol or other code as text. COMPOSITION: the bags must be LARGE and dominant, occupying roughly the middle 55-65% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. Leave only airy white space around them. RESERVE THE BOTTOM: keep the WIDTH and DEPTH arrows and their two-line labels finished ABOVE the lowest 14% of the image — the entire bottom 14% strip must be left as completely empty plain white space (a capacity bar is added there afterwards), so nothing — no bag, no arrow, no label — reaches into it. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
+   /* every dimension graphic (height, width, depth, capacity) is canvas-drawn by
+      the app afterwards, so the model must draw NONE of them — just the two bags */
+   const measurePart = `CRITICAL — NO MEASUREMENTS OR TEXT ON THE SPEC AREA: do NOT draw ANY dimension arrows, measurement lines, numbers, units, the words HEIGHT/WIDTH/DEPTH, any "IN"/"CM"/litre value, or any capacity badge anywhere in the image — the app adds all of those itself. Leave the leftmost 15% of the image and the entire bottom 20% as completely empty plain white space with nothing in them, and keep both bags clear of those margins.`;
+   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in a clean modern geometric sans-serif (like Outfit or Poppins), bold and a restrained, compact size, in a bright hot magenta-pink colour: "Designed for Everyday Use". Below it a smaller dark-charcoal subtitle in the same font: "Lightweight. Durable. Reliable.". Render ONLY those exact words — spell "Everyday" and "Reliable" correctly, and never draw any colour name, hex code, "#" symbol or other code as text. COMPOSITION: the bags must be LARGE and dominant, occupying roughly the middle 55-65% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. The two bags sit in the horizontal centre with a clear empty margin on the left and a clear empty strip along the bottom. Leave only airy white space around them. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
  },
  fits: i=>{
    const frontAngleRule = `BAG ANGLE RULE: use the exact same FRONT ANGLE / FRONT VIEW as the first attached product photo. The front panel, front pocket, front artwork, front logo patch and front zipper layout must face the camera. Never show the back panel, shoulder straps, rear padding, rear handle view, side profile or any rotated/back-facing angle.`;
@@ -1297,9 +1294,84 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   return c.toDataURL("image/png");
 }
 
-/* Draws a guaranteed capacity badge near the TOP centre of the dims image, in
-   the gap between the two bags just under the title — matching the requested
-   reference layout. */
+/* Locates the two bags (front + side) by clustering non-white columns and
+   taking the two WIDEST clusters — that ignores the narrower rotated height
+   label on the left. Returns each bag's x-span and vertical extent. */
+function findTwoBags(ctx, W, H) {
+  const y0 = Math.round(H * 0.12), y1 = Math.round(H * 0.90), bh = y1 - y0;
+  let d;
+  try { d = ctx.getImageData(0, y0, W, bh).data; } catch (e) { return null; }
+  const ink = (x, y) => { const i = (y * W + x) * 4; return d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235; };
+  const mb0 = Math.round(bh * 0.20), mb1 = Math.round(bh * 0.62);
+  const colInk = [];
+  for (let x = 0; x < W; x++) {
+    colInk[x] = 0;
+    for (let y = mb0; y < mb1; y++) if (ink(x, y)) { colInk[x] = 1; break; }
+  }
+  const gapMax = Math.max(4, Math.round(W * 0.02));
+  const clusters = []; let cur = null, gap = 0;
+  for (let x = 0; x < W; x++) {
+    if (colInk[x]) { if (!cur) cur = { s: x, e: x }; cur.e = x; gap = 0; }
+    else if (cur) { gap++; if (gap > gapMax) { clusters.push(cur); cur = null; gap = 0; } }
+  }
+  if (cur) clusters.push(cur);
+  const wide = clusters.filter(c => (c.e - c.s) >= Math.round(W * 0.08));
+  if (!wide.length) return null;
+  /* the two widest clusters are the bags; the height label is narrower */
+  wide.sort((a, b) => (b.e - b.s) - (a.e - a.s));
+  const two = wide.slice(0, 2).sort((a, b) => a.s - b.s);
+  const vext = (cl) => {
+    const rowInk = [];
+    for (let y = 0; y < bh; y++) { rowInk[y] = 0; for (let x = cl.s; x <= cl.e; x++) if (ink(x, y)) { rowInk[y] = 1; break; } }
+    const yGapMax = Math.max(3, Math.round(H * 0.01));
+    const runs = []; let run = null, yg = 0;
+    for (let y = 0; y < bh; y++) {
+      if (rowInk[y]) { if (!run) run = { s: y, e: y }; run.e = y; yg = 0; }
+      else if (run) { yg++; if (yg > yGapMax) { runs.push(run); run = null; yg = 0; } }
+    }
+    if (run) runs.push(run);
+    let best = null; for (const r of runs) if (!best || (r.e - r.s) > (best.e - best.s)) best = r;
+    return best ? { top: best.s + y0, bottom: best.e + y0 } : { top: y0, bottom: y1 };
+  };
+  const mk = (cl) => { const v = vext(cl); return { left: cl.s, right: cl.e, top: v.top, bottom: v.bottom }; };
+  return { front: mk(two[0]), side: two[1] ? mk(two[1]) : null };
+}
+
+/* Canvas-draws the WIDTH (under the front bag) and DEPTH (under the side bag)
+   dimension arrows and labels, so they can never collide with the capacity bar
+   or be garbled by the model. The model is told to draw neither. */
+async function overlayWidthDepth(dataUrl, d, size) {
+  const img = await loadImgEl(dataUrl);
+  const W = img.width, H = img.height;
+  if (document.fonts && document.fonts.load) { try { await document.fonts.load(`800 ${Math.round(W * 0.02)}px Outfit`); } catch (e) {} }
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
+  const bags = findTwoBags(ctx, W, H);
+  if (!bags) return c.toDataURL("image/png");
+  const nameSz = Math.round(W * 0.020), valSz = Math.round(W * 0.017);
+  const head = Math.max(4, Math.round(W * 0.007));
+  const maxArrowY = Math.round(H * 0.835); // keep labels clear of the bottom capacity bar
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const drawDim = (bag, name, val) => {
+    if (!bag || !val) return;
+    const cx = Math.round((bag.left + bag.right) / 2);
+    const ay = Math.min(maxArrowY, bag.bottom + Math.round(H * 0.018));
+    ctx.strokeStyle = "#111111"; ctx.fillStyle = "#111111"; ctx.lineWidth = Math.max(1.5, W * 0.0018);
+    ctx.beginPath(); ctx.moveTo(bag.left, ay); ctx.lineTo(bag.right, ay); ctx.stroke();
+    const hd = (x, dir) => { ctx.beginPath(); ctx.moveTo(x, ay); ctx.lineTo(x + head * dir, ay - head * 0.5); ctx.lineTo(x + head * dir, ay + head * 0.5); ctx.closePath(); ctx.fill(); };
+    hd(bag.left, 1); hd(bag.right, -1);
+    ctx.fillStyle = "#111111"; ctx.font = `800 ${nameSz}px Outfit, Archivo, Arial, sans-serif`;
+    ctx.fillText(name, cx, ay + Math.round(H * 0.028));
+    ctx.fillStyle = "#333333"; ctx.font = `500 ${valSz}px Outfit, Archivo, Arial, sans-serif`;
+    ctx.fillText(val, cx, ay + Math.round(H * 0.050));
+  };
+  drawDim(bags.front, "WIDTH", d.W ? `${d.W} IN (${d.Wcm} CM)` : "");
+  drawDim(bags.side || bags.front, "DEPTH", d.D ? `${d.D} IN (${d.Dcm} CM)` : "");
+  return c.toDataURL("image/png");
+}
+
+/* Draws a guaranteed capacity bar near the bottom of the dims image, below the
+   canvas-drawn WIDTH/DEPTH labels. */
 async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
@@ -1310,7 +1382,7 @@ async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const cx = W / 2;
   const numSz = Math.round(W * 0.05);
   const lblSz = Math.round(W * 0.017);
-  const numY = Math.round(H * (isPortrait ? 0.945 : 0.92));
+  const numY = Math.round(H * (isPortrait ? 0.955 : 0.935));
   const lblY = numY + Math.round(numSz * 0.72);
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
   /* big "N L" */
@@ -1382,17 +1454,18 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
 
     try{
       /* app-drawn labels: ask the AI for a clean image, overlay cards ourselves */
-      let overlayLabels=null, overlayLayout=null, overlayCapLitres=null, overlayIconMap=null, overlayH=null, iP=i;
+      let overlayLabels=null, overlayLayout=null, overlayCapLitres=null, overlayIconMap=null, overlayH=null, overlayWD=null, iP=i;
       if(document.getElementById("overlayMode").checked){
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,comfort:[]}; }
         if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,space:[]}; }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
           if(L.length){ overlayLabels=L; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,needItems:""}; } }
       }
-      /* Capacity badge is ALWAYS canvas-drawn for dims (ensures portrait goes to bottom) */
+      /* For dims, EVERY dimension graphic is canvas-drawn — the model garbles
+         rotated text and plants labels wherever it likes; the prompt blanks them */
       if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...iP,cap:""}; }
-      /* Height label is ALWAYS canvas-drawn — the model garbles rotated stacked text */
       if(id==="dims" && i.H){ overlayH={inches:i.H, cm:i.Hcm}; }
+      if(id==="dims" && (i.W||i.D)){ overlayWD={W:i.W, Wcm:i.Wcm, D:i.D, Dcm:i.Dcm}; }
       const filesToUse = (id === "white" || id === "fits") ? filesWhite : files;
       let prompt=refNote(id)+PROMPTS[id](iP);
       if(overlayLabels && overlayLayout==="sides") prompt+=" COMPOSITION: place the single real product bag, sharp and fully in focus, centred and occupying about the middle third of the width, standing on a soft contact shadow. BACKGROUND MUST BE EMPTY AND FLAT: the entire area around the bag — the whole left third, the whole right third, and the space above and below — is one single, completely plain, uniform, evenly-lit flat colour fill with ABSOLUTELY NOTHING in it. Do NOT fill that space with a second bag, a giant blurred bag, a faded or ghosted bag, a watermark bag, a silhouette, a reflection of the bag, product patterns, scenery, props or decoration of any kind — it is bare empty colour, edge to edge and corner to corner, as if the bag were photographed alone on a plain seamless studio backdrop. Exactly ONE bag appears in the whole image.";
@@ -1409,15 +1482,19 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         try{ url=await overlayCards(url,overlayLabels,overlayLayout,overlayIconMap); }
         catch(e){ console.warn("overlay failed",e); }
       }
-      /* capacity badge first: the height overlay may rescale the whole frame,
-         and the badge must ride along with it rather than sit at a stale spot */
-      if(overlayCapLitres){
-        try{ url=await overlayCapacityBadge(url,overlayCapLitres,size); }
-        catch(e){ console.warn("capacity badge overlay failed",e); }
-      }
+      /* order matters: height first (it may rescale the whole frame), then
+         width/depth and capacity detect bags on that final frame and sit below */
       if(overlayH){
         try{ url=await overlayHeightLabel(url,overlayH.inches,overlayH.cm,size); }
         catch(e){ console.warn("height label overlay failed",e); }
+      }
+      if(overlayWD){
+        try{ url=await overlayWidthDepth(url,overlayWD,size); }
+        catch(e){ console.warn("width/depth overlay failed",e); }
+      }
+      if(overlayCapLitres){
+        try{ url=await overlayCapacityBadge(url,overlayCapLitres,size); }
+        catch(e){ console.warn("capacity badge overlay failed",e); }
       }
       card.querySelector(".r-img").innerHTML=`<input type="checkbox" class="r-pick" title="Select for download"/><img src="${url}"/>`;
       card.querySelector(".r-status").textContent="Done ✓";
