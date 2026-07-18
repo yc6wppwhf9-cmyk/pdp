@@ -6,7 +6,7 @@
 <title>SnapToShelf — Marketplace Listing Image Generator</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='white'/%3E%3Cpath fill='%2336343A' d='M10 30a20 20 0 0 1 20-20h12a6 6 0 0 1 6 6v22a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6z'/%3E%3Cpath fill='%2338719F' d='M10 56a6 6 0 0 1 6-6h26a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6L18 92c-4 1.7-8-1-8-6z'/%3E%3Cpath fill='%23EF4B3E' d='M58 16a6 6 0 0 1 6-6h20a6 6 0 0 1 6 7l-8 58a8 8 0 0 1-8 7H64a6 6 0 0 1-6-6z'/%3E%3C/svg%3E"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#101114;
@@ -877,11 +877,11 @@ const PROMPTS = {
  dims: i=>{
    const m=[];
    if(i.H) m.push(`Leave the leftmost 16% of the image completely EMPTY — pure plain white space containing no bag, no arrow, no line, no text and no marks of any kind. Do NOT draw a vertical height arrow, and do NOT write the word "HEIGHT" or any height number or unit anywhere in the image. The app draws the height arrow and its measurement itself afterwards.`);
-   if(i.W) m.push(`Directly below the front view, draw a thin horizontal dimension arrow spanning the bag width. Under the arrow, centred, write exactly three stacked lines: "WIDTH", "${i.W} INCHES", "(${i.Wcm} cm)" with WIDTH bold and largest.`);
-   if(i.D) m.push(`Directly below the side view, draw a thin horizontal dimension arrow spanning the bag depth. Under the arrow, centred, write exactly three stacked lines: "DEPTH", "${i.D} INCHES", "(${i.Dcm} cm)" with DEPTH bold and largest.`);
+   if(i.W) m.push(`Directly below the front view, draw a thin horizontal dimension arrow spanning the bag width. Under the arrow, centred, write exactly two stacked lines: "WIDTH" in bold, then "${i.W} IN (${i.Wcm} CM)" in smaller regular weight.`);
+   if(i.D) m.push(`Directly below the side view, draw a thin horizontal dimension arrow spanning the bag depth. Under the arrow, centred, write exactly two stacked lines: "DEPTH" in bold, then "${i.D} IN (${i.Dcm} CM)" in smaller regular weight.`);
    if(i.cap) m.push(`At the bottom centre of the image, in the open gap above the WIDTH and DEPTH text labels, place a white rounded rectangle badge with a thin dark outline reading "${i.cap}L" in large bold dark text with "CAPACITY" in small letter-spaced text under it. It must stay in the lower band and must not appear near the title or subtitle.`);
    const measurePart = m.length?m.join(" ")+" Show ONLY these measurements — do not invent any other number.":"Do NOT draw any measurement lines, arrows, dimension numbers or capacity badge — only the two bag views.";
-   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in clean black modern sans-serif, regular-to-medium weight and a restrained, compact size: "Designed for Everyday Use", with a smaller subtitle below it: "Lightweight. Durable. Reliable.". COMPOSITION: the bags must be LARGE and dominant, occupying roughly the lower 65-72% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. Leave only airy white space around them. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
+   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in a clean modern geometric sans-serif (like Outfit or Poppins), bold and a restrained, compact size, coloured bright magenta-pink (#EC1C7E): "Designed for Everyday Use", with a smaller dark-charcoal subtitle in the same font below it: "Lightweight. Durable. Reliable.". Spell both lines EXACTLY as written — "Everyday" and "Reliable" must be spelled correctly. COMPOSITION: the bags must be LARGE and dominant, occupying roughly the lower 65-72% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. Leave only airy white space around them. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
  },
  fits: i=>{
    const frontAngleRule = `BAG ANGLE RULE: use the exact same FRONT ANGLE / FRONT VIEW as the first attached product photo. The front panel, front pocket, front artwork, front logo patch and front zipper layout must face the camera. Never show the back panel, shoulder straps, rear padding, rear handle view, side profile or any rotated/back-facing angle.`;
@@ -1227,6 +1227,7 @@ function findFrontBag(ctx, W, H) {
 async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
+  if (document.fonts && document.fonts.load) { try { await document.fonts.load(`800 ${Math.round(W*0.026)}px Outfit`); } catch (e) {} }
   const src = document.createElement("canvas"); src.width = W; src.height = H;
   const sctx = src.getContext("2d"); sctx.drawImage(img, 0, 0);
 
@@ -1274,16 +1275,14 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   };
   headAt(box.top, 1); headAt(box.bottom, -1);
 
-  /* three rotated columns mirroring the WIDTH/DEPTH labels line for line:
-     name bold and largest, then inches, then centimetres */
-  let nameSz = Math.round(W * 0.024), inSz = Math.round(W * 0.021), cmSz = Math.round(W * 0.020);
-  const gap = Math.round(pad * 0.6);
-  const avail = ax - pad * 2, need = nameSz + inSz + cmSz + gap * 2;
+  /* two rotated columns matching the reference: "HEIGHT" then "N IN (N CM)" */
+  let nameSz = Math.round(W * 0.026), valSz = Math.round(W * 0.020);
+  const gap = Math.round(pad * 0.7);
+  const avail = ax - pad * 2, need = nameSz + valSz + gap;
   if (need > avail) {
     const shrink = avail / need;
     nameSz = Math.max(8, Math.floor(nameSz * shrink));
-    inSz = Math.max(7, Math.floor(inSz * shrink));
-    cmSz = Math.max(7, Math.floor(cmSz * shrink));
+    valSz = Math.max(7, Math.floor(valSz * shrink));
   }
   const cy = (box.top + box.bottom) / 2;
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -1291,12 +1290,10 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
     ctx.save(); ctx.translate(x, cy); ctx.rotate(-Math.PI / 2);
     ctx.font = font; ctx.fillStyle = fill; ctx.fillText(text, 0, 0); ctx.restore();
   };
-  const cmX = ax - pad - cmSz / 2;
-  const inX = cmX - cmSz / 2 - gap - inSz / 2;
-  const nameX = inX - inSz / 2 - gap - nameSz / 2;
-  col(cmX, `(${cmVal} cm)`, `500 ${cmSz}px Archivo, Arial, sans-serif`, "#555555");
-  col(inX, `${inches} INCHES`, `600 ${inSz}px Archivo, Arial, sans-serif`, "#333333");
-  col(nameX, "HEIGHT", `700 ${nameSz}px Archivo, Arial, sans-serif`, "#111111");
+  const valX = ax - pad - valSz / 2;
+  const nameX = valX - valSz / 2 - gap - nameSz / 2;
+  col(valX, `${inches} IN (${cmVal} CM)`, `600 ${valSz}px Outfit, Archivo, Arial, sans-serif`, "#222222");
+  col(nameX, "HEIGHT", `800 ${nameSz}px Outfit, Archivo, Arial, sans-serif`, "#111111");
   return c.toDataURL("image/png");
 }
 
@@ -1308,32 +1305,35 @@ async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const W = img.width, H = img.height;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
+  if (document.fonts && document.fonts.load) { try { await document.fonts.load(`800 ${Math.round(W*0.05)}px Outfit`); } catch (e) {} }
   const isPortrait = size === "1024x1536";
-  const bW = Math.round(W * (isPortrait ? 0.2 : 0.17));
-  const bH = Math.round(H * (isPortrait ? 0.052 : 0.068));
-  const bx = Math.round((W - bW) / 2);
-  const by = Math.round(H * (isPortrait ? 0.2 : 0.24));
-  const r  = Math.round(bH * 0.22);
-  const numSz = Math.round(bH * 0.46);
-  const lblSz = Math.round(bH * 0.23);
-  /* shadow + fill */
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.18)"; ctx.shadowBlur = W * 0.012; ctx.shadowOffsetY = W * 0.004;
-  ctx.fillStyle = "#ffffff"; roundRectPath(ctx, bx, by, bW, bH, r); ctx.fill();
-  ctx.restore();
-  /* border */
-  ctx.save();
-  roundRectPath(ctx, bx, by, bW, bH, r);
-  ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = Math.max(2, Math.round(W * 0.003)); ctx.stroke();
-  ctx.restore();
-  /* text */
+  const cx = W / 2;
+  const numSz = Math.round(W * 0.05);
+  const lblSz = Math.round(W * 0.017);
+  const numY = Math.round(H * (isPortrait ? 0.945 : 0.92));
+  const lblY = numY + Math.round(numSz * 0.72);
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillStyle = "#111111";
-  ctx.font = `700 ${numSz}px Archivo, Arial, sans-serif`;
-  ctx.fillText(`${capLitres}L`, bx + bW / 2, by + bH * 0.4);
-  ctx.font = `600 ${lblSz}px Archivo, Arial, sans-serif`;
-  ctx.fillStyle = "#444444";
-  ctx.fillText("CAPACITY", bx + bW / 2, by + bH * 0.76);
+  /* big "N L" */
+  ctx.font = `700 ${numSz}px Outfit, Archivo, Arial, sans-serif`;
+  ctx.fillStyle = "#161616";
+  const numTxt = `${capLitres} L`;
+  ctx.fillText(numTxt, cx, numY);
+  const numW = ctx.measureText(numTxt).width;
+  /* "CAPACITY" letter-spaced under it */
+  ctx.font = `600 ${lblSz}px Outfit, Archivo, Arial, sans-serif`;
+  ctx.fillStyle = "#333333";
+  const hadLS = "letterSpacing" in ctx;
+  if (hadLS) ctx.letterSpacing = `${Math.round(lblSz * 0.28)}px`;
+  ctx.fillText("CAPACITY", cx, lblY);
+  if (hadLS) ctx.letterSpacing = "0px";
+  /* pink lines flanking the number, at its vertical centre, out to the margins */
+  const th = Math.max(3, Math.round(H * 0.006));
+  const marginX = Math.round(W * 0.06);
+  const g = Math.round(W * 0.03);
+  ctx.fillStyle = "#EC1C7E";
+  const leftEnd = cx - numW / 2 - g, rightStart = cx + numW / 2 + g;
+  if (leftEnd > marginX) ctx.fillRect(marginX, numY - th / 2, leftEnd - marginX, th);
+  if (rightStart < W - marginX) ctx.fillRect(rightStart, numY - th / 2, (W - marginX) - rightStart, th);
   return c.toDataURL("image/png");
 }
 
