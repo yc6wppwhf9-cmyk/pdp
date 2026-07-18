@@ -849,7 +849,7 @@ const BASE = i => `ABSOLUTE PRODUCT FIDELITY — THIS IS A COMPOSITING TASK, NOT
 
 const PROMPTS = {
  white: i=>`${BASE(i)} IMPORTANT: Only ONE product photo is attached — use it exactly as captured. Render ONLY the bag in a STRAIGHT FRONT VIEW (facing the camera directly, not angled), perfectly centred on a pure white #FFFFFF background with a soft natural contact shadow under the base. No text, no props, no badges, no logo overlays. Clean marketplace main-image.`,
- hero: i=>`${BASE(i)} CINEMATIC LARGER-THAN-LIFE HERO SHOT — photorealistic composite photography style, NOT an illustration or 3D render. The bag stands as a COLOSSAL MONUMENT 5–8 storeys tall, composited into a real-world location that perfectly matches the bag's personality${i.theme?`: the setting is directly inspired by "${i.theme}" (scenery direction only — NEVER write this phrase as text anywhere in the image)`:`, chosen based on the bag's own print, colour and character`}.${i.age?` The scene must feel exciting and magical to ${i.age}-year-olds.`:""} SCALE: convey the enormous size of the bag using ONLY inanimate real-world objects of familiar size at its base — parked cars, trees, streetlights, benches, buildings or similar — all completely dwarfed by the bag, exactly like a real-world installation or landmark. ABSOLUTELY NO PEOPLE: the image must contain NO humans of any kind — no pedestrians, students, commuters, fans, crowds, silhouettes or figures anywhere in the scene, near or far. CAMERA ANGLE: slightly low, wide-angle lens looking upward at the bag against the sky or backdrop — the bag fills the frame from ground to top edge. LIGHTING: fully photoreal, cinematic natural light (golden hour, overcast drama, or bright midday depending on setting) with a realistic shadow cast by the bag onto the ground beneath it. The background environment — whether a sports stadium, prehistoric jungle, shopping mall, university campus, cityscape, beach or any other real place — must look completely photoreal, with authentic textures, correct perspective, and real atmospheric depth. ${i.pname?`The spirit of the product range "${i.pname}" should be felt in the choice of location and mood (location inspiration only — never written as text).`:""} ZERO text in the image — no overlaid brand wordmarks, no captions, no signage invented for the bag — only text that naturally exists in the real-world environment and only the bag's own printed branding exactly as it appears on the product.`,
+ hero: i=>`${BASE(i)} PREMIUM DREAMY PRODUCT HERO SHOT — a cinematic, photorealistic luxury beauty shot of the bag at its NATURAL real-world size (a normal-sized bag, NOT a giant monument or building), resting elegantly on a raised natural stone or rock pedestal/plinth at the centre of a magical, enchanting themed scene. The bag is the unmistakable HERO of the frame — crisp, sharp and in full focus, occupying roughly 45-55% of the image, presented like a high-end product hero photograph. ENVIRONMENT: a soft, dreamy, aspirational fantasy world that matches the bag's personality${i.theme?`, directly inspired by "${i.theme}" (scenery direction only — NEVER write this phrase as text anywhere in the image)`:`, derived from the bag's own colours and print — florals and drifting petals for a floral bag, tropical leaves, hibiscus and flowing water for a bright playful bag, and so on`}. Surround the bag with beautiful, oversized soft-focus themed elements colour-matched to the bag's own palette: giant dreamy flowers, floating petals, gentle swirling water ribbons, drifting sparkles and particles, soft glowing bokeh, silky flowing pastel fabric and a luminous dreamy sky.${i.age?` The mood should feel magical and enchanting to ${i.age}-year-olds.`:""} ABSOLUTELY NO PEOPLE: the image must contain NO humans of any kind — no figures, hands, silhouettes or crowds anywhere. LIGHTING: soft, cinematic, diffused light with a warm dreamy glow and a gentle rim light tracing the bag, a soft realistic contact shadow and subtle reflection where it rests on the pedestal. DEPTH OF FIELD: the fantasy background is softly blurred so the sharply-focused bag always stays the clear focal point. ${i.pname?`The spirit of the product range "${i.pname}" should be felt in the scene's mood (inspiration only — never written as text).`:""} ZERO text in the image — no overlaid brand wordmarks, no captions, no invented signage — only the bag's own printed branding exactly as it appears on the product.`,
  life: i=>`${BASE(i)} Photorealistic LIFESTYLE photo: a ${i.model==="No model"?"natural scene with the bag placed believably":"happy "+i.model.toLowerCase()+(isLuggage()?" walking while pulling the bag along by its fully extended telescopic handle, the bag upright on its wheels beside them, glancing back and smiling at camera":" wearing the bag on BOTH shoulders, looking back over the shoulder and smiling at camera")}${i.age?` (clearly age ${i.age})`:""}, at ${i.bg||(isLuggage()?"a bright, tidy airport terminal or hotel lobby":"a bright, tidy everyday Indian setting")}.${i.model!=="No model"&&i.modelDesc?` MODEL APPEARANCE: ${i.modelDesc}. The person must be an entirely fictional, generic individual matching this description — not a real or recognisable person.`:""} CRITICAL SCALE: the bag must be ${i.H||"correctly"} ${i.H?"inches tall":""} relative to the model's torso — not too big, not too small. Natural window light, shallow depth of field. ${i.age?`A small rounded purple badge in the top-left corner reads exactly "AGE: ${i.age}".`:`No badges, no overlays and no text anywhere in the image.`}`,
  comfort: i=>{
    const cardPart = i.comfort.length
@@ -1300,44 +1300,9 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   return c.toDataURL("image/png");
 }
 
-/* Finds the horizontal WIDTH/DEPTH measurement arrow so the capacity badge can
-   sit just below it. The arrow is a THIN dark line with empty background above
-   AND below it — the key distinction from a dark product body (e.g. a black
-   bag), whose dark rows have more dark pixels directly above and below. We scan
-   the lower band bottom-up and take the lowest isolated thin line. */
-function findWidthArrowY(ctx, W, H) {
-  const y0 = Math.round(H * 0.55), y1 = Math.round(H * 0.95), bh = y1 - y0;
-  let d;
-  try { d = ctx.getImageData(0, y0, W, bh).data; } catch (e) { return null; }
-  const minRun = Math.round(W * 0.18);
-  const band = Math.max(3, Math.round(H * 0.025)); // vertical clearance a real line needs
-  /* longest horizontal run of dark pixels in row ry (0-based within the band) */
-  const rowRun = (ry) => {
-    if (ry < 0 || ry >= bh) return 0;
-    let run = 0, best = 0, gap = 0;
-    for (let x = 0; x < W; x++) {
-      const i = (ry * W + x) * 4;
-      if (d[i] < 170 && d[i + 1] < 170 && d[i + 2] < 170) { run++; gap = 0; if (run > best) best = run; }
-      else if (run && ++gap > 4) { run = 0; gap = 0; }
-    }
-    return best;
-  };
-  /* among all isolated thin lines, take the LONGEST — the width/depth arrow
-     spans the bag and beats any short text run or stray trim detail */
-  let bestY = null, bestRun = minRun;
-  for (let y = 0; y < bh; y++) {
-    const r = rowRun(y);
-    if (r < bestRun) continue;
-    /* accept only if the bands above and below are mostly clear background —
-       a solid bag body fails this because its neighbouring rows are also dark */
-    if (rowRun(y - band) < minRun * 0.5 && rowRun(y + band) < minRun * 0.5) { bestRun = r; bestY = y + y0; }
-  }
-  return bestY;
-}
-
-/* Draws a guaranteed capacity badge in the lower centre of the dims image,
-   sitting just below the width/depth arrow, in the empty gap between the
-   centred WIDTH and DEPTH labels. */
+/* Draws a guaranteed capacity badge near the TOP centre of the dims image, in
+   the gap between the two bags just under the title — matching the requested
+   reference layout. */
 async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
@@ -1347,10 +1312,7 @@ async function overlayCapacityBadge(dataUrl, capLitres, size) {
   const bW = Math.round(W * (isPortrait ? 0.2 : 0.17));
   const bH = Math.round(H * (isPortrait ? 0.052 : 0.068));
   const bx = Math.round((W - bW) / 2);
-  const arrowY = findWidthArrowY(ctx, W, H);
-  const by = arrowY !== null
-    ? Math.round(arrowY + H * 0.012)
-    : Math.round(H * (isPortrait ? 0.82 : 0.755));
+  const by = Math.round(H * (isPortrait ? 0.2 : 0.24));
   const r  = Math.round(bH * 0.22);
   const numSz = Math.round(bH * 0.46);
   const lblSz = Math.round(bH * 0.23);
