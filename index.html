@@ -1297,24 +1297,39 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
   return c.toDataURL("image/png");
 }
 
-/* Finds the horizontal WIDTH/DEPTH measurement arrow — the longest horizontal
-   run of dark pixels in the lower part of the image — so the capacity badge can
-   sit clear of it instead of landing on top of the line. */
+/* Finds the horizontal WIDTH/DEPTH measurement arrow so the capacity badge can
+   sit just below it. The arrow is a THIN dark line with empty background above
+   AND below it — the key distinction from a dark product body (e.g. a black
+   bag), whose dark rows have more dark pixels directly above and below. We scan
+   the lower band bottom-up and take the lowest isolated thin line. */
 function findWidthArrowY(ctx, W, H) {
-  const y0 = Math.round(H * 0.55), y1 = Math.round(H * 0.95);
+  const y0 = Math.round(H * 0.55), y1 = Math.round(H * 0.95), bh = y1 - y0;
   let d;
-  try { d = ctx.getImageData(0, y0, W, y1 - y0).data; } catch (e) { return null; }
+  try { d = ctx.getImageData(0, y0, W, bh).data; } catch (e) { return null; }
   const minRun = Math.round(W * 0.18);
-  for (let y = 0; y < y1 - y0; y++) {
-    let run = 0, gap = 0;
+  const band = Math.max(3, Math.round(H * 0.025)); // vertical clearance a real line needs
+  /* longest horizontal run of dark pixels in row ry (0-based within the band) */
+  const rowRun = (ry) => {
+    if (ry < 0 || ry >= bh) return 0;
+    let run = 0, best = 0, gap = 0;
     for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4;
-      if (d[i] < 170 && d[i + 1] < 170 && d[i + 2] < 170) { run++; gap = 0; }
-      else if (run) { if (++gap > 4) { if (run >= minRun) return y + y0; run = 0; gap = 0; } }
+      const i = (ry * W + x) * 4;
+      if (d[i] < 170 && d[i + 1] < 170 && d[i + 2] < 170) { run++; gap = 0; if (run > best) best = run; }
+      else if (run && ++gap > 4) { run = 0; gap = 0; }
     }
-    if (run >= minRun) return y + y0;
+    return best;
+  };
+  /* among all isolated thin lines, take the LONGEST — the width/depth arrow
+     spans the bag and beats any short text run or stray trim detail */
+  let bestY = null, bestRun = minRun;
+  for (let y = 0; y < bh; y++) {
+    const r = rowRun(y);
+    if (r < bestRun) continue;
+    /* accept only if the bands above and below are mostly clear background —
+       a solid bag body fails this because its neighbouring rows are also dark */
+    if (rowRun(y - band) < minRun * 0.5 && rowRun(y + band) < minRun * 0.5) { bestRun = r; bestY = y + y0; }
   }
-  return null;
+  return bestY;
 }
 
 /* Draws a guaranteed capacity badge in the lower centre of the dims image,
