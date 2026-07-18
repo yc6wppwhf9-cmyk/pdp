@@ -1239,8 +1239,13 @@ async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
 
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const ctx = c.getContext("2d");
+  /* The dims background is always white, but the corner pixel is often a hair
+     off (JPEG/vignette, e.g. 245). Using it verbatim to fill the rescale bands
+     paints a faint grey box behind the bottom labels — snap near-whites to pure
+     white so the fill is invisible against the background. */
   const p = sctx.getImageData(2, 2, 1, 1).data;
-  const bg = (p[0] > 240 && p[1] > 240 && p[2] > 240) ? `rgb(${p[0]},${p[1]},${p[2]})` : "#ffffff";
+  const bg = (p[0] > 232 && p[1] > 232 && p[2] > 232) ? "#ffffff"
+           : (p[0] > 200 && p[1] > 200 && p[2] > 200) ? `rgb(${p[0]},${p[1]},${p[2]})` : "#ffffff";
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   ctx.drawImage(src, dx, dy, W * k, H * k);
 
