@@ -878,7 +878,7 @@ const PROMPTS = {
    /* every dimension graphic (height, width, depth, capacity) is canvas-drawn by
       the app afterwards, so the model must draw NONE of them — just the two bags */
    const measurePart = `CRITICAL — NO MEASUREMENTS OR TEXT ON THE SPEC AREA: do NOT draw ANY dimension arrows, measurement lines, numbers, units, the words HEIGHT/WIDTH/DEPTH, any "IN"/"CM"/litre value, or any capacity badge anywhere in the image — the app adds all of those itself. Leave the leftmost 15% of the image and the entire bottom 20% as completely empty plain white space with nothing in them, and keep both bags clear of those margins.`;
-   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in a clean modern geometric sans-serif (like Outfit or Poppins), bold and a restrained, compact size, in a bright hot magenta-pink colour: "Designed for Everyday Use". Below it a smaller dark-charcoal subtitle in the same font: "Lightweight. Durable. Reliable.". Render ONLY those exact words — spell "Everyday" and "Reliable" correctly, and never draw any colour name, hex code, "#" symbol or other code as text. COMPOSITION: the bags must be LARGE and dominant, occupying roughly the middle 55-65% of the image height. Show the SAME bag TWICE with bottoms aligned: on the LEFT a large full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. The two bags sit in the horizontal centre with a clear empty margin on the left and a clear empty strip along the bottom. Leave only airy white space around them. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
+   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in a clean modern geometric sans-serif (like Outfit or Poppins), bold and a restrained, compact size, in a bright hot magenta-pink colour: "Designed for Everyday Use". Below it a smaller dark-charcoal subtitle in the same font: "Lightweight. Durable. Reliable.". Render ONLY those exact words — spell "Everyday" and "Reliable" correctly, and never draw any colour name, hex code, "#" symbol or other code as text. COMPOSITION: show the SAME bag TWICE with bottoms aligned: on the LEFT a full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. The bags occupy roughly the middle 50% of the image height and BOTH bag bottoms must sit at about 74% of the image height — the ENTIRE bottom 26% of the image is left as completely empty plain white space, and there is also a clear empty margin on the left. Do not let any part of either bag (including tassels, straps or hanging pulls) reach into that empty bottom quarter. Leave only airy white space around the bags. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
  },
  fits: i=>{
    const frontAngleRule = `BAG ANGLE RULE: use the exact same FRONT ANGLE / FRONT VIEW as the first attached product photo. The front panel, front pocket, front artwork, front logo patch and front zipper layout must face the camera. Never show the back panel, shoulder straps, rear padding, rear handle view, side profile or any rotated/back-facing angle.`;
@@ -1350,20 +1350,26 @@ async function overlayWidthDepth(dataUrl, d, size) {
   if (!bags) return c.toDataURL("image/png");
   const nameSz = Math.round(W * 0.020), valSz = Math.round(W * 0.017);
   const head = Math.max(4, Math.round(W * 0.007));
-  const maxArrowY = Math.round(H * 0.835); // keep labels clear of the bottom capacity bar
+  /* Anchor the label block just ABOVE the capacity bar (fixed low position) so
+     it stays as far from the bags as possible — the model draws them tall and
+     the old bag-relative anchor let the labels ride up onto the product. */
+  const isP = size === "1024x1536";
+  const capTopY = Math.round(H * (isP ? 0.955 : 0.935)) - Math.round(W * 0.05) / 2;
+  const valY = capTopY - Math.round(H * 0.026);
+  const nameY = valY - Math.round(H * 0.026);
+  const arrowY = nameY - Math.round(H * 0.022);
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
   const drawDim = (bag, name, val) => {
     if (!bag || !val) return;
     const cx = Math.round((bag.left + bag.right) / 2);
-    const ay = Math.min(maxArrowY, bag.bottom + Math.round(H * 0.018));
     ctx.strokeStyle = "#111111"; ctx.fillStyle = "#111111"; ctx.lineWidth = Math.max(1.5, W * 0.0018);
-    ctx.beginPath(); ctx.moveTo(bag.left, ay); ctx.lineTo(bag.right, ay); ctx.stroke();
-    const hd = (x, dir) => { ctx.beginPath(); ctx.moveTo(x, ay); ctx.lineTo(x + head * dir, ay - head * 0.5); ctx.lineTo(x + head * dir, ay + head * 0.5); ctx.closePath(); ctx.fill(); };
+    ctx.beginPath(); ctx.moveTo(bag.left, arrowY); ctx.lineTo(bag.right, arrowY); ctx.stroke();
+    const hd = (x, dir) => { ctx.beginPath(); ctx.moveTo(x, arrowY); ctx.lineTo(x + head * dir, arrowY - head * 0.5); ctx.lineTo(x + head * dir, arrowY + head * 0.5); ctx.closePath(); ctx.fill(); };
     hd(bag.left, 1); hd(bag.right, -1);
     ctx.fillStyle = "#111111"; ctx.font = `800 ${nameSz}px Outfit, Archivo, Arial, sans-serif`;
-    ctx.fillText(name, cx, ay + Math.round(H * 0.028));
+    ctx.fillText(name, cx, nameY);
     ctx.fillStyle = "#333333"; ctx.font = `500 ${valSz}px Outfit, Archivo, Arial, sans-serif`;
-    ctx.fillText(val, cx, ay + Math.round(H * 0.050));
+    ctx.fillText(val, cx, valY);
   };
   drawDim(bags.front, "WIDTH", d.W ? `${d.W} IN (${d.Wcm} CM)` : "");
   drawDim(bags.side || bags.front, "DEPTH", d.D ? `${d.D} IN (${d.Dcm} CM)` : "");
