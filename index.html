@@ -1174,7 +1174,7 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
    can be sized and placed against the model's actual composition rather than
    fixed fractions (the model ignores instructions about where to compose). */
 function findFrontBag(ctx, W, H) {
-  const xMax = Math.round(W * 0.50);
+  const xMax = Math.round(W * 0.60);
   const y0 = Math.round(H * 0.12), y1 = Math.round(H * 0.95), bh = y1 - y0;
   let d;
   try { d = ctx.getImageData(0, y0, xMax, bh).data; } catch (e) { return null; }
@@ -1367,8 +1367,9 @@ async function overlayDimsSheet(dataUrl, d, size) {
 
   /* ---- DEPTH arrow (diagonal off the bottom-right corner) ------------------- */
   if (d.D) {
-    const sx = box.right, sy = box.bottom;
-    const ex = box.right + Math.round(W * 0.07), ey = box.bottom + Math.round(H * 0.055);
+    /* clamp the arrow tip so the rotated label never runs off the bottom edge */
+    const sx = box.right, sy = Math.min(box.bottom, Math.round(H * 0.78));
+    const ex = box.right + Math.round(W * 0.06), ey = Math.min(sy + Math.round(H * 0.045), H - Math.round(H * 0.10));
     ctx.strokeStyle = PURPLE; ctx.fillStyle = PURPLE; ctx.lineWidth = lw;
     ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
     const ang = Math.atan2(ey - sy, ex - sx);
@@ -1380,7 +1381,7 @@ async function overlayDimsSheet(dataUrl, d, size) {
     };
     ah(sx, sy, -1); ah(ex, ey, 1);
     ctx.save();
-    ctx.translate((sx + ex) / 2 + Math.round(W * 0.02), (sy + ey) / 2 + Math.round(H * 0.008));
+    ctx.translate((sx + ex) / 2 + Math.round(W * 0.028), (sy + ey) / 2 + Math.round(H * 0.006));
     ctx.rotate(ang);
     ctx.font = `800 ${Math.round(W * 0.026)}px ${F}`; ctx.fillStyle = INK;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -1389,7 +1390,11 @@ async function overlayDimsSheet(dataUrl, d, size) {
   }
 
   /* ---- Warranty & quality-test tag (right side) ----------------------------- */
-  const tw = Math.round(W * 0.40), tx = W - tw - Math.round(W * 0.035);
+  /* right-align the tag to the frame edge, but push its left edge past the bag
+     so it can never overlap the product no matter how wide the model drew it */
+  const rightEdge = W - Math.round(W * 0.035);
+  const tx = Math.max(rightEdge - Math.round(W * 0.42), box.right + Math.round(W * 0.03));
+  const tw = rightEdge - tx;
   const ty = Math.round(H * 0.20), th = Math.round(H * 0.58);
   /* hanging cord + eyelet */
   ctx.strokeStyle = "#1b1b1b"; ctx.lineWidth = Math.max(2, W * 0.003);
@@ -1402,30 +1407,37 @@ async function overlayDimsSheet(dataUrl, d, size) {
   ctx.strokeStyle = "#E0DAEC"; ctx.lineWidth = Math.max(1, W * 0.0015); ctx.stroke();
   ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(holeX, holeY + Math.round(H * 0.005), Math.round(W * 0.012), 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = "#c9c2d8"; ctx.lineWidth = Math.max(1.5, W * 0.0018); ctx.stroke();
-  /* tag title */
+  /* tag title — auto-fit the long first line to the tag width */
   ctx.fillStyle = PURPLE; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-  const ttlSz = Math.round(tw * 0.088); ctx.font = `800 ${ttlSz}px ${F}`;
-  const ttlY = ty + Math.round(th * 0.16);
-  ctx.fillText("6 MONTHS WARRANTY &", tx + tw / 2, ttlY);
+  const ttlLine = "6 MONTHS WARRANTY &";
+  let ttlSz = Math.round(tw * 0.085); ctx.font = `800 ${ttlSz}px ${F}`;
+  const maxTtlW = tw - Math.round(W * 0.03);
+  if (ctx.measureText(ttlLine).width > maxTtlW) { ttlSz = Math.floor(ttlSz * maxTtlW / ctx.measureText(ttlLine).width); ctx.font = `800 ${ttlSz}px ${F}`; }
+  const ttlY = ty + Math.round(th * 0.15);
+  ctx.fillText(ttlLine, tx + tw / 2, ttlY);
   ctx.fillText("QUALITY TEST", tx + tw / 2, ttlY + ttlSz * 1.15);
-  /* icon grid: 3 across then 2 across */
-  const r = Math.round(tw * 0.11);
-  const labelSz = Math.round(tw * 0.05);
-  const drawCell = (icon, lines, cx, cy) => {
+  /* icon grid: 3 across then 2 across. Each cell shrinks its own label until the
+     widest line fits its column, so neighbouring labels never collide. */
+  const r = Math.round(tw * 0.10);
+  const baseLabelSz = Math.round(tw * 0.046);
+  const drawCell = (icon, lines, cx, cy, cellW) => {
     ctx.strokeStyle = "#2a2530"; ctx.lineJoin = "round"; ctx.lineCap = "round";
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
     DIM_TEST_ICONS[icon](ctx, cx, cy, r * 0.62);
-    ctx.fillStyle = GREY; ctx.font = `700 ${labelSz}px ${F}`; ctx.textAlign = "center"; ctx.textBaseline = "top";
-    let ly = cy + r + Math.round(th * 0.018);
-    for (const ln of lines) { ctx.fillText(ln, cx, ly); ly += labelSz * 1.18; }
+    let ls = baseLabelSz; ctx.font = `700 ${ls}px ${F}`;
+    const widest = Math.max(...lines.map(l => ctx.measureText(l).width));
+    if (widest > cellW) { ls = Math.max(8, Math.floor(ls * cellW / widest)); }
+    ctx.fillStyle = GREY; ctx.font = `700 ${ls}px ${F}`; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    let ly = cy + r + Math.round(th * 0.02);
+    for (const ln of lines) { ctx.fillText(ln, cx, ly); ly += ls * 1.2; }
   };
-  const row1Y = ty + Math.round(th * 0.44), row2Y = ty + Math.round(th * 0.74);
-  const x1 = tx + tw * 0.2, x2 = tx + tw * 0.5, x3 = tx + tw * 0.8;
-  drawCell("zip", ["ZIP", "5,000 CYCLES"], x1, row1Y);
-  drawCell("humidity", ["HUMIDITY", "RESISTANCE", "120 HRS"], x2, row1Y);
-  drawCell("topHandle", ["TOP HANDLE", "JERK", "2,000 CYCLES"], x3, row1Y);
-  drawCell("strapHandle", ["STRAP", "HANDLE JERK", "4,500 CYCLES"], tx + tw * 0.34, row2Y);
-  drawCell("burst", ["BURST", "INTENSE", "PRESSURE"], tx + tw * 0.66, row2Y);
+  const row1Y = ty + Math.round(th * 0.42), row2Y = ty + Math.round(th * 0.72);
+  const col1W = tw * 0.29, col2W = tw * 0.34;
+  drawCell("zip", ["ZIP", "5,000 CYCLES"], tx + tw * 0.19, row1Y, col1W);
+  drawCell("humidity", ["HUMIDITY", "RESISTANCE", "120 HRS"], tx + tw * 0.5, row1Y, col1W);
+  drawCell("topHandle", ["TOP HANDLE", "JERK", "2,000 CYCLES"], tx + tw * 0.81, row1Y, col1W);
+  drawCell("strapHandle", ["STRAP", "HANDLE JERK", "4,500 CYCLES"], tx + tw * 0.32, row2Y, col2W);
+  drawCell("burst", ["BURST", "INTENSE", "PRESSURE"], tx + tw * 0.68, row2Y, col2W);
 
   /* ---- Capacity badge (boxed, lower-left under the bag) --------------------- */
   if (d.cap) {
