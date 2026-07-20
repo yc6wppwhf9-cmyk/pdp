@@ -861,10 +861,16 @@ const PROMPTS = {
    return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these four words and nothing else: Comfort That Carries Well — the words Comfort That in dark text, the words Carries Well in an accent colour, separated by single plain spaces with no character of any kind before, between or after them. ${viewPart} ${cardPart} Background: ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel tone matching the bag's main colour"+(i.theme?` with subtle 3D ${i.theme} elements at the bottom`:'')}. Premium kids-catalogue style.`;
  },
  space: i=>{
-   const cardPart = i.space.length
-     ? `EXACTLY ${i.space.length} white rounded feature cards arranged in two neat vertical columns — one column down the far LEFT edge of the image, one down the far RIGHT edge, half the cards in each — each with a tiny icon and label, one card per feature, each appearing exactly once, spelled letter-perfect, no extra cards: ${i.space.join(", ")}. These are floating legend cards in a card-grid design, NOT a callout diagram: each card is a fully closed shape, and a wide band of plain empty background separates the columns from the bag — absolutely nothing is drawn in that gap. FINAL CHECK: this image contains ZERO lines anywhere — if any stroke connects or reaches from a card towards the bag, the image is WRONG.`
-     : `Do NOT draw any callout cards, labels or icons — only the title, subtitle and the bag, with clean empty space around it.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these two words and nothing else: Space Story — the word Space in dark text, the word Story in an accent colour, with a single plain space between them and no character of any kind before, between or after them. A small subtitle sits below: "Every Pocket, A New Adventure!". The bag shown fully CLOSED — every zipper zipped shut, no compartment or pocket open, exactly as it appears in the reference photos — at three-quarter angle, centred, undistorted. Do NOT add any sticker, patch, badge, charm or graphic onto the bag that is not visible in the reference photos. ${cardPart} Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing in it — no second or ghosted bag, no pattern, no scenery${i.theme?`, aside from a few small subtle 3D ${i.theme} elements resting only along the very bottom edge`:''}. Same design language as a premium school-bag listing.`;
+   /* Reference "Space Story" layout: a large centre bag with FOUR corner photo
+      tiles, each a close-up of one storage area. The app overlays the title,
+      the per-tile icons and the captions afterwards, so the model draws only the
+      bag and the four photo tiles and leaves every text/icon area blank. */
+   const feats = i.space.slice(0, 4);
+   const pos = ["TOP-LEFT", "TOP-RIGHT", "BOTTOM-LEFT", "BOTTOM-RIGHT"];
+   const tiles = feats.length
+     ? `In each of the FOUR corners place a separate rounded-rectangle PHOTO TILE with a soft pale-blue rounded background — each tile a REALISTIC CLOSE-UP PHOTOGRAPH of one specific storage area of THIS exact bag, derived faithfully from the reference photos (same bag, same colours, same print, same trims, same zips): ${feats.map((f, k) => `the ${pos[k]} tile shows the ${f.toLowerCase()} (that part of the bag in genuine real-world use — e.g. an open main compartment holding books, notebooks and a bottle; a front pocket with small items; side mesh pockets holding water bottles; the interior organiser)`).join("; ")}. The four tiles are evenly sized, clearly separated, sitting in the four corners well clear of the centre bag.`
+     : `Do NOT draw any corner tiles — only the centre bag on a clean pastel background.`;
+   return `${BASE(i)} PREMIUM "SPACE STORY" STORAGE-SHOWCASE catalogue layout. COMPOSITION: the hero product bag stands upright and CLOSED at the CENTRE of the image, large, sharp and faithful to the reference photos. ${tiles} Leave the TOP-LEFT area of the image empty for a title, and leave a small BLANK strip directly BELOW each corner tile (for a caption) plus a small BLANK plain space centred on each tile's TOP edge (for an icon) — the app adds the title, captions and icons itself. CRITICAL — ABSOLUTELY NO TEXT AND NO ICONS anywhere in the image: do not draw any words, letters, numbers, captions, labels or feature icons; leave all those areas blank. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${i.theme?`, aside from a few small subtle 3D ${i.theme} elements only along the very bottom edge`:''}. Premium school-bag marketplace style.`;
  },
  need: i=>{
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
@@ -1166,6 +1172,54 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
     let x=(W-(w*n+gap*(n-1)))/2;
     const y=H*0.735;
     for(const l of labels){ await drawCard(x,y,w,l); x+=w+gap; }
+  }
+  return c.toDataURL("image/png");
+}
+
+/* Reference "Space Story" overlay: the model draws the centre bag + four corner
+   compartment PHOTO tiles; this adds the "SPACE STORY" title (top-left), and for
+   each corner an icon badge on the tile's top edge plus a white caption chip
+   below it. Positions match the corners the prompt asks the model to fill. */
+async function overlaySpaceCorners(dataUrl, labels, iconMap){
+  const img=await loadImgEl(dataUrl);
+  const W=img.width,H=img.height;
+  const c=document.createElement("canvas"); c.width=W; c.height=H;
+  const ctx=c.getContext("2d"); ctx.drawImage(img,0,0);
+  if(document.fonts&&document.fonts.load){ try{ await document.fonts.load(`800 ${Math.round(W*0.05)}px Syne`); await document.fonts.load(`700 ${Math.round(W*0.022)}px Outfit`); }catch(e){} }
+
+  /* title, top-left */
+  ctx.fillStyle="#1b1c22"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+  ctx.font=`800 ${Math.round(W*0.05)}px Syne, Outfit, Arial, sans-serif`;
+  ctx.fillText("SPACE STORY", Math.round(W*0.05), Math.round(H*0.085));
+
+  /* the four corner tile centres (must match the prompt's corner tiles) */
+  const spots=[{cx:0.185,cy:0.34},{cx:0.815,cy:0.34},{cx:0.185,cy:0.74},{cx:0.815,cy:0.74}];
+  const tileHalfH=H*0.115;
+  const iconR=Math.round(W*0.028);
+  const capSz=Math.round(W*0.021);
+  for(let k=0;k<Math.min(4,labels.length);k++){
+    const s=spots[k], cx=W*s.cx, cy=H*s.cy, label=labels[k];
+    /* icon badge — white circle sitting on the tile's top edge */
+    const by=cy-tileHalfH+Math.round(H*0.005);
+    ctx.beginPath(); ctx.arc(cx,by,iconR,0,Math.PI*2);
+    ctx.fillStyle="#ffffff"; ctx.fill();
+    ctx.strokeStyle="#dbe4ee"; ctx.lineWidth=Math.max(1,W*0.0013); ctx.stroke();
+    const bk=label.replace(/^\d+\s+/,"").replace(/s$/i,"");
+    const iconSrc=iconMap&&(iconMap[label]||iconMap[bk]||iconMap[bk+"s"]||iconMap[bk+"S"]);
+    if(iconSrc){ try{ const ic=await loadImgEl(iconSrc); const sz=iconR*1.25; ctx.drawImage(ic,cx-sz/2,by-sz/2,sz,sz); }catch(e){} }
+    /* caption chip below the tile, auto-fit the label to a max width */
+    let cs=capSz; ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`;
+    const maxCap=W*0.26;
+    if(ctx.measureText(label).width>maxCap){ cs=Math.max(9,Math.floor(cs*maxCap/ctx.measureText(label).width)); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`; }
+    const tw=ctx.measureText(label).width;
+    const chW=tw+Math.round(W*0.045), chH=Math.round(cs*2.3);
+    const chx=cx-chW/2, chy=cy+tileHalfH+Math.round(H*0.012);
+    ctx.save();
+    ctx.shadowColor="rgba(20,40,70,0.16)"; ctx.shadowBlur=W*0.012; ctx.shadowOffsetY=W*0.003;
+    roundRectPath(ctx,chx,chy,chW,chH,chH/2); ctx.fillStyle="#ffffff"; ctx.fill();
+    ctx.restore();
+    ctx.fillStyle="#20344f"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(label,cx,chy+chH/2);
   }
   return c.toDataURL("image/png");
 }
@@ -1556,7 +1610,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
       let overlayLabels=null, overlayLayout=null, overlayIconMap=null, overlayDims=null, iP=i;
       if(document.getElementById("overlayMode").checked){
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,comfort:[]}; }
-        if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,space:[]}; }
+        if(id==="space" && i.space.length){ overlayLabels=i.space.slice(0,4); overlayLayout="spaceCorners"; overlayIconMap=FEATURE_ICONS; /* keep i.space so the prompt can name each corner photo */ }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
           if(L.length){ overlayLabels=L; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,needItems:""}; } }
       }
@@ -1578,7 +1632,9 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
 
       let url=`data:${out.mime};base64,${out.b64}`;
       if(overlayLabels){
-        try{ url=await overlayCards(url,overlayLabels,overlayLayout,overlayIconMap); }
+        try{ url = overlayLayout==="spaceCorners"
+          ? await overlaySpaceCorners(url,overlayLabels,overlayIconMap)
+          : await overlayCards(url,overlayLabels,overlayLayout,overlayIconMap); }
         catch(e){ console.warn("overlay failed",e); }
       }
       if(overlayDims){
