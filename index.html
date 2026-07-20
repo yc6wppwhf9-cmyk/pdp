@@ -875,10 +875,11 @@ const PROMPTS = {
    return `${BASE(i)} Catalogue infographic. Title at top centre inside a simple clean white rounded-rectangle pill outline with a smooth border, never a wavy label or speech bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view, scaled so the full bag remains visible between side badge columns. ${badgePart} Background: a flat, plain, evenly-lit soft pastel surface matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}, filling the frame edge to edge — the bag appears ONCE and the background behind it is empty, containing no enlarged, faded or ghosted second bag and nothing else bag-shaped. No other text.`;
  },
  dims: i=>{
-   /* every dimension graphic (height, width, depth, capacity) is canvas-drawn by
-      the app afterwards, so the model must draw NONE of them — just the two bags */
-   const measurePart = `CRITICAL — NO MEASUREMENTS OR TEXT ON THE SPEC AREA: do NOT draw ANY dimension arrows, measurement lines, numbers, units, the words HEIGHT/WIDTH/DEPTH, any "IN"/"CM"/litre value, or any capacity badge anywhere in the image — the app adds all of those itself. Leave the leftmost 15% of the image and the entire bottom 20% as completely empty plain white space with nothing in them, and keep both bags clear of those margins.`;
-   return `${BASE(i)} Technical catalogue infographic on a clean pure white #FFFFFF background, matching a premium marketplace dimension-spec sheet. Title at top centre in a clean modern geometric sans-serif (like Outfit or Poppins), bold and a restrained, compact size, in a bright hot magenta-pink colour: "Designed for Everyday Use". Below it a smaller dark-charcoal subtitle in the same font: "Lightweight. Durable. Reliable.". Render ONLY those exact words — spell "Everyday" and "Reliable" correctly, and never draw any colour name, hex code, "#" symbol or other code as text. COMPOSITION: show the SAME bag TWICE with bottoms aligned: on the LEFT a full front view, on the RIGHT a side profile view of the identical bag, slightly narrower but similar height. The bags occupy roughly the middle 50% of the image height and BOTH bag bottoms must sit at about 74% of the image height — the ENTIRE bottom 26% of the image is left as completely empty plain white space, and there is also a clear empty margin on the left. Do not let any part of either bag (including tassels, straps or hanging pulls) reach into that empty bottom quarter. Leave only airy white space around the bags. Do NOT write "FRONT" or "SIDE" anywhere. CRITICAL: the side view is the SAME physical product rotated 90 degrees — derive it faithfully from the reference photos with the same colours, same materials, same zips and zipper pullers, same trims, same proportions and same details as the front view; do NOT draw a simplified or generic bag for the side view. ${measurePart} Minimal, airy, professional e-commerce spec sheet — no pastel tint, no clouds, no extra decoration, no other text. All numbers and units must be spelled EXACTLY as written here.`;
+   /* The whole spec sheet (title, pill, three measurement arrows, warranty tag
+      and capacity badge) is canvas-drawn by the app afterwards, so the model
+      draws NOTHING but a single clean front view of the bag, left-of-centre,
+      with generous empty margins for every overlay zone. */
+   return `${BASE(i)} Clean e-commerce product shot for a dimension spec sheet, on a soft PLAIN pale-lavender background (a smooth #F4EFFB studio backdrop) that is completely empty and even — no clouds, no stars, no rainbows, no props, no patterns, no decorations, no second bag, no ghosted or blurred bag, no reflection, nothing. Show EXACTLY ONE bag: a single FRONT-facing view of the product standing upright, sharp and fully in focus, rendered faithfully from the reference photos with the SAME colours, materials, zips, zipper pullers, trims, badges and proportions. COMPOSITION — LEAVE ROOM FOR OVERLAYS: place the bag in the LEFT-CENTRE of the frame, its body occupying roughly from 17% to 45% of the image WIDTH and from 30% to 72% of the image HEIGHT. Keep every other area as completely empty plain lavender space with NOTHING in it: the entire TOP 18%, the entire BOTTOM 22%, the left 15% margin, and the WHOLE right 45% of the image — the app draws the title, a pill, the measurement arrows, a warranty tag and a capacity badge into those empty areas itself. CRITICAL — ABSOLUTELY NO TEXT, ICONS OR MEASUREMENTS: do NOT draw any title, words, letters, numbers, units, dimension arrows, measurement lines, ticks, the words HEIGHT/WIDTH/DEPTH, any INCH/IN/CM value, any warranty tag, any test icons, any pill/badge or any capacity marker anywhere in the image — only the single bag on the empty lavender backdrop.`;
  },
  fits: i=>{
    const frontAngleRule = `BAG ANGLE RULE: use the exact same FRONT ANGLE / FRONT VIEW as the first attached product photo. The front panel, front pocket, front artwork, front logo patch and front zipper layout must face the camera. Never show the back panel, shoulder straps, rear padding, rear handle view, side profile or any rotated/back-facing angle.`;
@@ -1212,211 +1213,236 @@ function findFrontBag(ctx, W, H) {
   let best = null;
   for (const r of runs) if (!best || (r.e - r.s) > (best.e - best.s)) best = r;
   if (!best) return null;
-  return { left: bag.s, top: best.s + y0, bottom: best.e + y0 };
+  return { left: bag.s, right: bag.e, top: best.s + y0, bottom: best.e + y0 };
 }
 
-/* Draws a guaranteed HEIGHT label at the left of the dims image. The model
-   garbles rotated stacked text ("46 INC6 cm"), so the label is drawn here.
-   It also ignores any request to leave a left margin, so rather than depend on
-   its composition, the whole frame is scaled down a few percent and pushed
-   right until the label has room — the added margin is filled with the model's
-   own background colour, so it reads as ordinary padding. */
-async function overlayHeightLabel(dataUrl, inches, cmVal, size) {
+
+/* ===== Reference-style dimension spec sheet =====================================
+   Draws the ENTIRE overlay in one pass over a clean single-bag image: the title,
+   the "Dimensions (LxWxD)" pill, three measurement arrows (height on the left,
+   width under the bag, depth diagonally off the bottom-right corner), a hanging
+   "warranty & quality test" tag with five line-art test icons, and a boxed
+   capacity badge. Nothing here relies on the model drawing text — it garbles it. */
+function _rr(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+/* Five simple stroked test icons, each drawn centred in a circle of radius r. */
+const DIM_TEST_ICONS = {
+  zip(ctx, cx, cy, r) {
+    const t = Math.max(1, r * 0.09);
+    ctx.lineWidth = t;
+    ctx.beginPath(); ctx.moveTo(cx, cy - r * 0.8); ctx.lineTo(cx, cy + r * 0.8); ctx.stroke();
+    for (let k = -3; k <= 3; k++) {
+      const y = cy + k * r * 0.24, side = (k % 2 === 0) ? 1 : -1;
+      ctx.beginPath(); ctx.moveTo(cx, y); ctx.lineTo(cx + side * r * 0.42, y); ctx.stroke();
+    }
+    _rr(ctx, cx - r * 0.22, cy + r * 0.18, r * 0.44, r * 0.5, r * 0.12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy + r * 0.68); ctx.lineTo(cx, cy + r * 0.95); ctx.stroke();
+  },
+  humidity(ctx, cx, cy, r) {
+    ctx.lineWidth = Math.max(1, r * 0.09);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r * 0.85);
+    ctx.bezierCurveTo(cx + r * 0.85, cy + r * 0.1, cx + r * 0.55, cy + r * 0.9, cx, cy + r * 0.9);
+    ctx.bezierCurveTo(cx - r * 0.55, cy + r * 0.9, cx - r * 0.85, cy + r * 0.1, cx, cy - r * 0.85);
+    ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx - r * 0.18, cy + r * 0.35, r * 0.22, Math.PI * 0.7, Math.PI * 1.3); ctx.stroke();
+  },
+  topHandle(ctx, cx, cy, r) {
+    ctx.lineWidth = Math.max(1, r * 0.09);
+    /* arch handle */
+    ctx.beginPath(); ctx.arc(cx, cy + r * 0.25, r * 0.7, Math.PI, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - r * 0.7, cy + r * 0.25); ctx.lineTo(cx - r * 0.7, cy + r * 0.55); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + r * 0.7, cy + r * 0.25); ctx.lineTo(cx + r * 0.7, cy + r * 0.55); ctx.stroke();
+    /* up arrow through it */
+    ctx.beginPath(); ctx.moveTo(cx, cy + r * 0.15); ctx.lineTo(cx, cy - r * 0.85); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - r * 0.85); ctx.lineTo(cx - r * 0.28, cy - r * 0.5); ctx.moveTo(cx, cy - r * 0.85); ctx.lineTo(cx + r * 0.28, cy - r * 0.5); ctx.stroke();
+  },
+  strapHandle(ctx, cx, cy, r) {
+    ctx.lineWidth = Math.max(1, r * 0.09);
+    _rr(ctx, cx - r * 0.3, cy - r * 0.85, r * 0.6, r * 1.7, r * 0.18); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - r * 0.55, cy - r * 0.12); ctx.lineTo(cx + r * 0.55, cy - r * 0.12);
+    ctx.moveTo(cx - r * 0.55, cy + r * 0.12); ctx.lineTo(cx + r * 0.55, cy + r * 0.12); ctx.stroke();
+    _rr(ctx, cx - r * 0.14, cy - r * 0.18, r * 0.28, r * 0.36, r * 0.08); ctx.stroke();
+  },
+  burst(ctx, cx, cy, r) {
+    ctx.lineWidth = Math.max(1, r * 0.09);
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.22, 0, Math.PI * 2); ctx.stroke();
+    const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    for (const [dx, dy] of dirs) {
+      const sx = cx + dx * r * 0.85, sy = cy + dy * r * 0.85;
+      const ex = cx + dx * r * 0.4, ey = cy + dy * r * 0.4;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+      /* arrowhead pointing inward */
+      const px = -dy, py = dx;
+      ctx.beginPath(); ctx.moveTo(ex, ey);
+      ctx.lineTo(ex + dx * r * 0.28 + px * r * 0.18, ey + dy * r * 0.28 + py * r * 0.18);
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex + dx * r * 0.28 - px * r * 0.18, ey + dy * r * 0.28 - py * r * 0.18);
+      ctx.stroke();
+    }
+  }
+};
+
+async function overlayDimsSheet(dataUrl, d, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
-  if (document.fonts && document.fonts.load) { try { await document.fonts.load(`800 ${Math.round(W*0.026)}px Outfit`); } catch (e) {} }
-  const src = document.createElement("canvas"); src.width = W; src.height = H;
-  const sctx = src.getContext("2d"); sctx.drawImage(img, 0, 0);
-
-  const box = findFrontBag(sctx, W, H)
-    || { left: Math.round(W * 0.17), top: Math.round(H * 0.26), bottom: Math.round(H * 0.73) };
-
-  /* shrink just enough to open a TARGET-wide strip for the three columns;
-     k===1 when the model left enough room already, leaving the frame alone */
-  const TARGET = 0.17;
-  const k = Math.min(1, (1 - TARGET) * W / Math.max(1, W - box.left));
-  const dx = W * (1 - k), dy = (H - H * k) / 2;
-
+  if (document.fonts && document.fonts.load) { try { await document.fonts.load(`800 ${Math.round(W * 0.045)}px Outfit`); await document.fonts.load(`700 ${Math.round(W * 0.028)}px Outfit`); } catch (e) {} }
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const ctx = c.getContext("2d");
-  /* The dims background is always white, but the corner pixel is often a hair
-     off (JPEG/vignette, e.g. 245). Using it verbatim to fill the rescale bands
-     paints a faint grey box behind the bottom labels — snap near-whites to pure
-     white so the fill is invisible against the background. */
-  const p = sctx.getImageData(2, 2, 1, 1).data;
-  const bg = (p[0] > 232 && p[1] > 232 && p[2] > 232) ? "#ffffff"
-           : (p[0] > 200 && p[1] > 200 && p[2] > 200) ? `rgb(${p[0]},${p[1]},${p[2]})` : "#ffffff";
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  ctx.drawImage(src, dx, dy, W * k, H * k);
+  ctx.drawImage(img, 0, 0);
 
-  /* bag bounds in the recomposed frame */
-  box.left = dx + box.left * k;
-  box.top = dy + box.top * k;
-  box.bottom = dy + box.bottom * k;
+  const PURPLE = "#8B3AD6", PURPLE_DK = "#6D28B8", INK = "#3D2B63", GREY = "#6B6480";
+  const F = "Outfit, Poppins, Archivo, Arial, sans-serif";
 
-  const pad = Math.round(W * 0.012);
-  const clearW = Math.max(0, box.left - pad);
-  if (clearW < W * 0.07) return c.toDataURL("image/png");
+  /* locate the single bag on the (still clean) generated image */
+  const sc = document.createElement("canvas"); sc.width = W; sc.height = H;
+  sc.getContext("2d").drawImage(img, 0, 0);
+  let box = findFrontBag(sc.getContext("2d"), W, H);
+  if (!box) box = { left: Math.round(W * 0.17), right: Math.round(W * 0.45), top: Math.round(H * 0.30), bottom: Math.round(H * 0.72) };
+  if (box.right == null || box.right - box.left < W * 0.08) box.right = Math.min(Math.round(W * 0.47), box.left + Math.round(W * 0.28));
 
-  /* wipe anything the model drew in the margin, staying above the width arrow */
-  const eraseTop = Math.max(0, box.top - Math.round(H * 0.05));
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, eraseTop, clearW, (box.bottom - eraseTop) + Math.round(H * 0.01));
+  /* ---- Title + pill --------------------------------------------------------- */
+  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  const titleSz = Math.round(W * 0.046);
+  ctx.font = `800 ${titleSz}px ${F}`; ctx.fillStyle = PURPLE;
+  ctx.fillText("Designed for Everyday Use", W / 2, Math.round(H * 0.06));
+  const pillTxt = "Dimensions (LxWxD)";
+  const pillSz = Math.round(W * 0.028);
+  ctx.font = `700 ${pillSz}px ${F}`;
+  const pw = ctx.measureText(pillTxt).width + Math.round(W * 0.055);
+  const ph = Math.round(pillSz * 1.95);
+  const px = W / 2 - pw / 2, py = Math.round(H * 0.078);
+  _rr(ctx, px, py, pw, ph, ph / 2); ctx.fillStyle = PURPLE; ctx.fill();
+  ctx.fillStyle = "#ffffff"; ctx.textBaseline = "middle";
+  ctx.fillText(pillTxt, W / 2, py + ph / 2);
+  ctx.textBaseline = "alphabetic";
 
-  /* arrow spanning the bag's true height */
-  const ax = Math.round(clearW * 0.78);
-  const head = Math.max(4, Math.round(W * 0.008));
-  ctx.strokeStyle = "#111111"; ctx.fillStyle = "#111111";
-  ctx.lineWidth = Math.max(1.5, W * 0.0018);
-  ctx.beginPath(); ctx.moveTo(ax, box.top); ctx.lineTo(ax, box.bottom); ctx.stroke();
-  const headAt = (y, dir) => {
-    ctx.beginPath(); ctx.moveTo(ax, y);
-    ctx.lineTo(ax - head * 0.5, y + head * dir);
-    ctx.lineTo(ax + head * 0.5, y + head * dir);
-    ctx.closePath(); ctx.fill();
-  };
-  headAt(box.top, 1); headAt(box.bottom, -1);
+  const lw = Math.max(1.6, W * 0.0022);
+  const head = Math.max(5, Math.round(W * 0.009));
 
-  /* two rotated columns matching the reference: "HEIGHT" then "N IN (N CM)" */
-  let nameSz = Math.round(W * 0.026), valSz = Math.round(W * 0.020);
-  const gap = Math.round(pad * 0.7);
-  const avail = ax - pad * 2, need = nameSz + valSz + gap;
-  if (need > avail) {
-    const shrink = avail / need;
-    nameSz = Math.max(8, Math.floor(nameSz * shrink));
-    valSz = Math.max(7, Math.floor(valSz * shrink));
+  /* ---- HEIGHT arrow (dashed, left of the bag) ------------------------------- */
+  if (d.H) {
+    const ax = Math.max(Math.round(W * 0.11), box.left - Math.round(W * 0.05));
+    ctx.strokeStyle = PURPLE; ctx.fillStyle = PURPLE; ctx.lineWidth = lw;
+    ctx.setLineDash([Math.round(W * 0.012), Math.round(W * 0.009)]);
+    ctx.beginPath(); ctx.moveTo(ax, box.top); ctx.lineTo(ax, box.bottom); ctx.stroke();
+    ctx.setLineDash([]);
+    const tick = Math.round(W * 0.02);
+    ctx.beginPath(); ctx.moveTo(ax - tick, box.top); ctx.lineTo(ax + tick, box.top);
+    ctx.moveTo(ax - tick, box.bottom); ctx.lineTo(ax + tick, box.bottom); ctx.stroke();
+    /* label centred in the left margin, auto-fit to the available width */
+    let hSz = Math.round(W * 0.03);
+    const avail = ax - Math.round(W * 0.03);
+    ctx.font = `800 ${hSz}px ${F}`;
+    const txt = `${d.H} INCH`;
+    if (ctx.measureText(txt).width > avail) { hSz = Math.floor(hSz * avail / ctx.measureText(txt).width); ctx.font = `800 ${hSz}px ${F}`; }
+    ctx.fillStyle = INK; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(txt, ax / 2, (box.top + box.bottom) / 2);
+    ctx.textBaseline = "alphabetic";
   }
-  const cy = (box.top + box.bottom) / 2;
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const col = (x, text, font, fill) => {
-    ctx.save(); ctx.translate(x, cy); ctx.rotate(-Math.PI / 2);
-    ctx.font = font; ctx.fillStyle = fill; ctx.fillText(text, 0, 0); ctx.restore();
-  };
-  const valX = ax - pad - valSz / 2;
-  const nameX = valX - valSz / 2 - gap - nameSz / 2;
-  col(valX, `${inches} IN (${cmVal} CM)`, `600 ${valSz}px Outfit, Archivo, Arial, sans-serif`, "#222222");
-  col(nameX, "HEIGHT", `800 ${nameSz}px Outfit, Archivo, Arial, sans-serif`, "#111111");
-  return c.toDataURL("image/png");
-}
 
-/* Locates the two bags (front + side) by clustering non-white columns and
-   taking the two WIDEST clusters — that ignores the narrower rotated height
-   label on the left. Returns each bag's x-span and vertical extent. */
-function findTwoBags(ctx, W, H) {
-  const y0 = Math.round(H * 0.12), y1 = Math.round(H * 0.90), bh = y1 - y0;
-  let d;
-  try { d = ctx.getImageData(0, y0, W, bh).data; } catch (e) { return null; }
-  const ink = (x, y) => { const i = (y * W + x) * 4; return d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235; };
-  const mb0 = Math.round(bh * 0.20), mb1 = Math.round(bh * 0.62);
-  const colInk = [];
-  for (let x = 0; x < W; x++) {
-    colInk[x] = 0;
-    for (let y = mb0; y < mb1; y++) if (ink(x, y)) { colInk[x] = 1; break; }
+  /* ---- WIDTH arrow (under the bag) ------------------------------------------ */
+  if (d.W) {
+    const wy = Math.min(box.bottom + Math.round(H * 0.03), Math.round(H * 0.80));
+    ctx.strokeStyle = PURPLE; ctx.fillStyle = PURPLE; ctx.lineWidth = lw;
+    ctx.setLineDash([Math.round(W * 0.012), Math.round(W * 0.009)]);
+    ctx.beginPath(); ctx.moveTo(box.left, wy); ctx.lineTo(box.right, wy); ctx.stroke();
+    ctx.setLineDash([]);
+    const tick = Math.round(W * 0.02);
+    ctx.beginPath(); ctx.moveTo(box.left, wy - tick); ctx.lineTo(box.left, wy + tick);
+    ctx.moveTo(box.right, wy - tick); ctx.lineTo(box.right, wy + tick); ctx.stroke();
+    ctx.font = `800 ${Math.round(W * 0.03)}px ${F}`; ctx.fillStyle = INK;
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText(`${d.W} INCH`, (box.left + box.right) / 2, wy + Math.round(H * 0.012));
+    ctx.textBaseline = "alphabetic";
   }
-  const gapMax = Math.max(4, Math.round(W * 0.02));
-  const clusters = []; let cur = null, gap = 0;
-  for (let x = 0; x < W; x++) {
-    if (colInk[x]) { if (!cur) cur = { s: x, e: x }; cur.e = x; gap = 0; }
-    else if (cur) { gap++; if (gap > gapMax) { clusters.push(cur); cur = null; gap = 0; } }
+
+  /* ---- DEPTH arrow (diagonal off the bottom-right corner) ------------------- */
+  if (d.D) {
+    const sx = box.right, sy = box.bottom;
+    const ex = box.right + Math.round(W * 0.07), ey = box.bottom + Math.round(H * 0.055);
+    ctx.strokeStyle = PURPLE; ctx.fillStyle = PURPLE; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+    const ang = Math.atan2(ey - sy, ex - sx);
+    const ah = (x, y, dir) => {
+      ctx.beginPath(); ctx.moveTo(x, y);
+      ctx.lineTo(x - Math.cos(ang - 0.4) * head * dir, y - Math.sin(ang - 0.4) * head * dir);
+      ctx.lineTo(x - Math.cos(ang + 0.4) * head * dir, y - Math.sin(ang + 0.4) * head * dir);
+      ctx.closePath(); ctx.fill();
+    };
+    ah(sx, sy, -1); ah(ex, ey, 1);
+    ctx.save();
+    ctx.translate((sx + ex) / 2 + Math.round(W * 0.02), (sy + ey) / 2 + Math.round(H * 0.008));
+    ctx.rotate(ang);
+    ctx.font = `800 ${Math.round(W * 0.026)}px ${F}`; ctx.fillStyle = INK;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(`${d.D} INCH`, 0, 0);
+    ctx.restore();
   }
-  if (cur) clusters.push(cur);
-  const wide = clusters.filter(c => (c.e - c.s) >= Math.round(W * 0.08));
-  if (!wide.length) return null;
-  /* the two widest clusters are the bags; the height label is narrower */
-  wide.sort((a, b) => (b.e - b.s) - (a.e - a.s));
-  const two = wide.slice(0, 2).sort((a, b) => a.s - b.s);
-  const vext = (cl) => {
-    const rowInk = [];
-    for (let y = 0; y < bh; y++) { rowInk[y] = 0; for (let x = cl.s; x <= cl.e; x++) if (ink(x, y)) { rowInk[y] = 1; break; } }
-    const yGapMax = Math.max(3, Math.round(H * 0.01));
-    const runs = []; let run = null, yg = 0;
-    for (let y = 0; y < bh; y++) {
-      if (rowInk[y]) { if (!run) run = { s: y, e: y }; run.e = y; yg = 0; }
-      else if (run) { yg++; if (yg > yGapMax) { runs.push(run); run = null; yg = 0; } }
-    }
-    if (run) runs.push(run);
-    let best = null; for (const r of runs) if (!best || (r.e - r.s) > (best.e - best.s)) best = r;
-    return best ? { top: best.s + y0, bottom: best.e + y0 } : { top: y0, bottom: y1 };
-  };
-  const mk = (cl) => { const v = vext(cl); return { left: cl.s, right: cl.e, top: v.top, bottom: v.bottom }; };
-  return { front: mk(two[0]), side: two[1] ? mk(two[1]) : null };
-}
 
-/* Canvas-draws the WIDTH (under the front bag) and DEPTH (under the side bag)
-   dimension arrows and labels, so they can never collide with the capacity bar
-   or be garbled by the model. The model is told to draw neither. */
-async function overlayWidthDepth(dataUrl, d, size) {
-  const img = await loadImgEl(dataUrl);
-  const W = img.width, H = img.height;
-  if (document.fonts && document.fonts.load) { try { await document.fonts.load(`800 ${Math.round(W * 0.02)}px Outfit`); } catch (e) {} }
-  const c = document.createElement("canvas"); c.width = W; c.height = H;
-  const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
-  const bags = findTwoBags(ctx, W, H);
-  if (!bags) return c.toDataURL("image/png");
-  const nameSz = Math.round(W * 0.020), valSz = Math.round(W * 0.017);
-  const head = Math.max(4, Math.round(W * 0.007));
-  /* Anchor the label block just ABOVE the capacity bar (fixed low position) so
-     it stays as far from the bags as possible — the model draws them tall and
-     the old bag-relative anchor let the labels ride up onto the product. */
-  const isP = size === "1024x1536";
-  const capTopY = Math.round(H * (isP ? 0.955 : 0.935)) - Math.round(W * 0.05) / 2;
-  const valY = capTopY - Math.round(H * 0.026);
-  const nameY = valY - Math.round(H * 0.026);
-  const arrowY = nameY - Math.round(H * 0.022);
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const drawDim = (bag, name, val) => {
-    if (!bag || !val) return;
-    const cx = Math.round((bag.left + bag.right) / 2);
-    ctx.strokeStyle = "#111111"; ctx.fillStyle = "#111111"; ctx.lineWidth = Math.max(1.5, W * 0.0018);
-    ctx.beginPath(); ctx.moveTo(bag.left, arrowY); ctx.lineTo(bag.right, arrowY); ctx.stroke();
-    const hd = (x, dir) => { ctx.beginPath(); ctx.moveTo(x, arrowY); ctx.lineTo(x + head * dir, arrowY - head * 0.5); ctx.lineTo(x + head * dir, arrowY + head * 0.5); ctx.closePath(); ctx.fill(); };
-    hd(bag.left, 1); hd(bag.right, -1);
-    ctx.fillStyle = "#111111"; ctx.font = `800 ${nameSz}px Outfit, Archivo, Arial, sans-serif`;
-    ctx.fillText(name, cx, nameY);
-    ctx.fillStyle = "#333333"; ctx.font = `500 ${valSz}px Outfit, Archivo, Arial, sans-serif`;
-    ctx.fillText(val, cx, valY);
+  /* ---- Warranty & quality-test tag (right side) ----------------------------- */
+  const tw = Math.round(W * 0.40), tx = W - tw - Math.round(W * 0.035);
+  const ty = Math.round(H * 0.20), th = Math.round(H * 0.58);
+  /* hanging cord + eyelet */
+  ctx.strokeStyle = "#1b1b1b"; ctx.lineWidth = Math.max(2, W * 0.003);
+  const holeX = tx + tw / 2, holeY = ty + Math.round(H * 0.02);
+  ctx.beginPath(); ctx.moveTo(holeX, holeY); ctx.lineTo(holeX - Math.round(W * 0.02), holeY - Math.round(H * 0.06));
+  ctx.moveTo(holeX, holeY); ctx.lineTo(holeX + Math.round(W * 0.02), holeY - Math.round(H * 0.06)); ctx.stroke();
+  /* tag body */
+  _rr(ctx, tx, ty, tw, th, Math.round(W * 0.02));
+  ctx.fillStyle = "#F6F4FA"; ctx.fill();
+  ctx.strokeStyle = "#E0DAEC"; ctx.lineWidth = Math.max(1, W * 0.0015); ctx.stroke();
+  ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(holeX, holeY + Math.round(H * 0.005), Math.round(W * 0.012), 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "#c9c2d8"; ctx.lineWidth = Math.max(1.5, W * 0.0018); ctx.stroke();
+  /* tag title */
+  ctx.fillStyle = PURPLE; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  const ttlSz = Math.round(tw * 0.088); ctx.font = `800 ${ttlSz}px ${F}`;
+  const ttlY = ty + Math.round(th * 0.16);
+  ctx.fillText("6 MONTHS WARRANTY &", tx + tw / 2, ttlY);
+  ctx.fillText("QUALITY TEST", tx + tw / 2, ttlY + ttlSz * 1.15);
+  /* icon grid: 3 across then 2 across */
+  const r = Math.round(tw * 0.11);
+  const labelSz = Math.round(tw * 0.05);
+  const drawCell = (icon, lines, cx, cy) => {
+    ctx.strokeStyle = "#2a2530"; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    DIM_TEST_ICONS[icon](ctx, cx, cy, r * 0.62);
+    ctx.fillStyle = GREY; ctx.font = `700 ${labelSz}px ${F}`; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    let ly = cy + r + Math.round(th * 0.018);
+    for (const ln of lines) { ctx.fillText(ln, cx, ly); ly += labelSz * 1.18; }
   };
-  drawDim(bags.front, "WIDTH", d.W ? `${d.W} IN (${d.Wcm} CM)` : "");
-  drawDim(bags.side || bags.front, "DEPTH", d.D ? `${d.D} IN (${d.Dcm} CM)` : "");
-  return c.toDataURL("image/png");
-}
+  const row1Y = ty + Math.round(th * 0.44), row2Y = ty + Math.round(th * 0.74);
+  const x1 = tx + tw * 0.2, x2 = tx + tw * 0.5, x3 = tx + tw * 0.8;
+  drawCell("zip", ["ZIP", "5,000 CYCLES"], x1, row1Y);
+  drawCell("humidity", ["HUMIDITY", "RESISTANCE", "120 HRS"], x2, row1Y);
+  drawCell("topHandle", ["TOP HANDLE", "JERK", "2,000 CYCLES"], x3, row1Y);
+  drawCell("strapHandle", ["STRAP", "HANDLE JERK", "4,500 CYCLES"], tx + tw * 0.34, row2Y);
+  drawCell("burst", ["BURST", "INTENSE", "PRESSURE"], tx + tw * 0.66, row2Y);
 
-/* Draws a guaranteed capacity bar near the bottom of the dims image, below the
-   canvas-drawn WIDTH/DEPTH labels. */
-async function overlayCapacityBadge(dataUrl, capLitres, size) {
-  const img = await loadImgEl(dataUrl);
-  const W = img.width, H = img.height;
-  const c = document.createElement("canvas"); c.width = W; c.height = H;
-  const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0);
-  if (document.fonts && document.fonts.load) { try { await document.fonts.load(`800 ${Math.round(W*0.05)}px Outfit`); } catch (e) {} }
-  const isPortrait = size === "1024x1536";
-  const cx = W / 2;
-  const numSz = Math.round(W * 0.05);
-  const lblSz = Math.round(W * 0.017);
-  const numY = Math.round(H * (isPortrait ? 0.955 : 0.935));
-  const lblY = numY + Math.round(numSz * 0.72);
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  /* big "N L" */
-  ctx.font = `700 ${numSz}px Outfit, Archivo, Arial, sans-serif`;
-  ctx.fillStyle = "#161616";
-  const numTxt = `${capLitres} L`;
-  ctx.fillText(numTxt, cx, numY);
-  const numW = ctx.measureText(numTxt).width;
-  /* "CAPACITY" letter-spaced under it */
-  ctx.font = `600 ${lblSz}px Outfit, Archivo, Arial, sans-serif`;
-  ctx.fillStyle = "#333333";
-  const hadLS = "letterSpacing" in ctx;
-  if (hadLS) ctx.letterSpacing = `${Math.round(lblSz * 0.28)}px`;
-  ctx.fillText("CAPACITY", cx, lblY);
-  if (hadLS) ctx.letterSpacing = "0px";
-  /* pink lines flanking the number, at its vertical centre, out to the margins */
-  const th = Math.max(3, Math.round(H * 0.006));
-  const marginX = Math.round(W * 0.06);
-  const g = Math.round(W * 0.03);
-  ctx.fillStyle = "#EC1C7E";
-  const leftEnd = cx - numW / 2 - g, rightStart = cx + numW / 2 + g;
-  if (leftEnd > marginX) ctx.fillRect(marginX, numY - th / 2, leftEnd - marginX, th);
-  if (rightStart < W - marginX) ctx.fillRect(rightStart, numY - th / 2, (W - marginX) - rightStart, th);
+  /* ---- Capacity badge (boxed, lower-left under the bag) --------------------- */
+  if (d.cap) {
+    const bw = Math.round(W * 0.28), bh = Math.round(H * 0.11);
+    const bx = (box.left + box.right) / 2 - bw / 2;
+    const by = Math.round(H * 0.86);
+    _rr(ctx, bx, by, bw, bh, Math.round(W * 0.02));
+    ctx.fillStyle = "#ffffff"; ctx.fill();
+    ctx.strokeStyle = "#D9CFEA"; ctx.lineWidth = Math.max(1.5, W * 0.002); ctx.stroke();
+    ctx.textAlign = "center";
+    ctx.fillStyle = INK; ctx.font = `600 ${Math.round(W * 0.026)}px ${F}`; ctx.textBaseline = "middle";
+    ctx.fillText("CAPACITY", bx + bw / 2, by + bh * 0.3);
+    ctx.fillStyle = PURPLE; ctx.font = `800 ${Math.round(W * 0.055)}px ${F}`;
+    ctx.fillText(`${d.cap} L`, bx + bw / 2, by + bh * 0.68);
+    ctx.textBaseline = "alphabetic";
+  }
+
   return c.toDataURL("image/png");
 }
 
@@ -1465,18 +1491,18 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
 
     try{
       /* app-drawn labels: ask the AI for a clean image, overlay cards ourselves */
-      let overlayLabels=null, overlayLayout=null, overlayCapLitres=null, overlayIconMap=null, overlayH=null, overlayWD=null, iP=i;
+      let overlayLabels=null, overlayLayout=null, overlayIconMap=null, overlayDims=null, iP=i;
       if(document.getElementById("overlayMode").checked){
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,comfort:[]}; }
         if(id==="space" && i.space.length){ overlayLabels=i.space; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,space:[]}; }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
           if(L.length){ overlayLabels=L; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,needItems:""}; } }
       }
-      /* For dims, EVERY dimension graphic is canvas-drawn — the model garbles
-         rotated text and plants labels wherever it likes; the prompt blanks them */
-      if(id==="dims" && i.cap){ overlayCapLitres=i.cap; iP={...iP,cap:""}; }
-      if(id==="dims" && i.H){ overlayH={inches:i.H, cm:i.Hcm}; }
-      if(id==="dims" && (i.W||i.D)){ overlayWD={W:i.W, Wcm:i.Wcm, D:i.D, Dcm:i.Dcm}; }
+      /* For dims, the whole reference-style spec sheet (title, pill, three
+         measurement arrows, warranty tag and capacity badge) is canvas-drawn as
+         one overlay — the model draws only a single clean bag; the prompt blanks
+         every text/arrow/icon so nothing garbles. */
+      if(id==="dims"){ overlayDims={H:i.H,Hcm:i.Hcm,W:i.W,Wcm:i.Wcm,D:i.D,Dcm:i.Dcm,cap:i.cap}; iP={...iP,cap:""}; }
       const filesToUse = (id === "white" || id === "fits") ? filesWhite : files;
       let prompt=refNote(id)+PROMPTS[id](iP);
       if(overlayLabels && overlayLayout==="sides") prompt+=" COMPOSITION: place the single real product bag, sharp and fully in focus, centred and occupying about the middle third of the width, standing on a soft contact shadow. BACKGROUND MUST BE EMPTY AND FLAT: the entire area around the bag — the whole left third, the whole right third, and the space above and below — is one single, completely plain, uniform, evenly-lit flat colour fill with ABSOLUTELY NOTHING in it. Do NOT fill that space with a second bag, a giant blurred bag, a faded or ghosted bag, a watermark bag, a silhouette, a reflection of the bag, product patterns, scenery, props or decoration of any kind — it is bare empty colour, edge to edge and corner to corner, as if the bag were photographed alone on a plain seamless studio backdrop. Exactly ONE bag appears in the whole image.";
@@ -1493,19 +1519,9 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
         try{ url=await overlayCards(url,overlayLabels,overlayLayout,overlayIconMap); }
         catch(e){ console.warn("overlay failed",e); }
       }
-      /* order matters: height first (it may rescale the whole frame), then
-         width/depth and capacity detect bags on that final frame and sit below */
-      if(overlayH){
-        try{ url=await overlayHeightLabel(url,overlayH.inches,overlayH.cm,size); }
-        catch(e){ console.warn("height label overlay failed",e); }
-      }
-      if(overlayWD){
-        try{ url=await overlayWidthDepth(url,overlayWD,size); }
-        catch(e){ console.warn("width/depth overlay failed",e); }
-      }
-      if(overlayCapLitres){
-        try{ url=await overlayCapacityBadge(url,overlayCapLitres,size); }
-        catch(e){ console.warn("capacity badge overlay failed",e); }
+      if(overlayDims){
+        try{ url=await overlayDimsSheet(url,overlayDims,size); }
+        catch(e){ console.warn("dims sheet overlay failed",e); }
       }
       card.querySelector(".r-img").innerHTML=`<input type="checkbox" class="r-pick" title="Select for download"/><img src="${url}"/>`;
       card.querySelector(".r-status").textContent="Done ✓";
