@@ -1553,14 +1553,19 @@ async function overlayDimsSheet(dataUrl, d, size) {
       const tc = document.createElement("canvas"); tc.width = tagAsset.width; tc.height = tagAsset.height;
       const tctx = tc.getContext("2d"); tctx.drawImage(tagAsset, 0, 0);
       const idata = tctx.getImageData(0, 0, tc.width, tc.height), a = idata.data;
-      if (a[3] > 250) {                       /* corner opaque → it has a solid bg to remove */
-        const r0 = a[0], g0 = a[1], b0 = a[2], tol = 38 * 38;
-        for (let i = 0; i < a.length; i += 4) {
-          const dr = a[i] - r0, dg = a[i + 1] - g0, db = a[i + 2] - b0;
-          if (dr * dr + dg * dg + db * db < tol) a[i + 3] = 0;
-        }
-        tctx.putImageData(idata, 0, 0); src = tc;
+      /* The artwork sits on a flat light background (near-white top margin + a
+         light-grey field) that is close in tone to the tag paper. Key out only
+         low-saturation pixels in the background brightness bands — the bright
+         white margin and the mid light-grey field — while keeping the slightly
+         brighter tag paper and the dark icons/text/cord. */
+      let keyed = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        if (a[i + 3] < 200) continue;                       /* already transparent */
+        const r = a[i], g = a[i + 1], b = a[i + 2];
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+        if (mx - mn <= 16 && (mx >= 236 || (mx >= 188 && mx <= 222))) { a[i + 3] = 0; keyed++; }
       }
+      if (keyed > 0) { tctx.putImageData(idata, 0, 0); src = tc; }
     } catch (e) { src = tagAsset; }
     /* fit the artwork into the right zone, preserving its aspect ratio */
     const ar = tagAsset.width / tagAsset.height;
