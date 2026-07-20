@@ -845,11 +845,22 @@ function info(){
   };
 }
 
+/* Decorative theme for every themed image: use the theme the user typed, or —
+   when it is blank — auto-derive it from the bag's OWN printed motif/character so
+   the whole scene revolves around it (a kitty print → kitty theme, a unicorn →
+   unicorn/rainbow, a dinosaur → dinos, a floral → flowers). The bag reference
+   photos are attached, so the model can read the print itself. */
+function themeDecor(i){
+  return (i.theme && i.theme.trim())
+    ? i.theme.trim()
+    : "the bag's OWN main printed motif or character — read the dominant print/character on the bag from the reference photos (for example a kitty/cat, unicorn, dinosaur, teddy, car, superhero, butterfly or floral print) and build the theme around THAT motif and the bag's colour palette (kitty → cats, paw-prints, whiskers and yarn; unicorn → rainbows, stars and clouds; dinosaur → friendly dinos and leaves; floral → flowers and petals)";
+}
+
 const BASE = i => `ABSOLUTE PRODUCT FIDELITY — THIS IS A COMPOSITING TASK, NOT A DESIGN TASK: the bag in the output must be THE IDENTICAL physical ${i.bagType.toLowerCase()} shown in the attached product reference photos, as if those photos were cut out and re-lit in a new scene. Match ONE-TO-ONE: overall silhouette and proportions, every panel and seam, the exact number, size and position of pockets and zippers, zipper pullers, straps, handle shape, stitching, materials and textures, the brand label/badge in its exact position, colour [${i.colour||"exactly as shown in the photos"}] and any print pattern. Pay special attention to ACCENT COLOURS: any contrast-coloured zippers, piping, trims, linings or panels visible in the reference photos MUST appear in the same colour, same position and same brightness — never turn an accent-coloured part black or grey, even in dark or moody lighting. Do NOT invent, redesign, recolour, simplify, add or remove ANY part of the bag — if a detail is not visible in the reference photos, keep it plain and neutral rather than inventing one. Before finishing, verify the generated bag would be recognised as the same product as the reference photos by its owner.${i.brand?` Brand: ${i.brand}${i.pname?` "${i.pname}"`:""}.`:""} Professional Amazon/Flipkart PDP listing image, high resolution, crisp studio quality. Every word of text must be spelled EXACTLY as specified below in clean modern sans-serif type — no extra text, no gibberish, no invented words. TITLE SCALE — KEEP HEADINGS SMALL: any title, subtitle or heading is set in a modest, restrained size. The whole title block (including any bubble or pill around it) must occupy no more than about 12% of the image height and no more than 60% of the image width, sitting compactly at the top with generous clear space around it. The PRODUCT is always the visual hero and must be the largest, most dominant element — never let a heading compete with it or spread across the full width. TEXT IS PLAIN TYPE, NEVER MARKUP: render only the literal words specified. Never draw an angle bracket, chevron, slash, tag, asterisk, underscore, brace, pipe or any other stray punctuation or code-like character next to, between or around the words — colour changes are applied by simply typing the word in that colour, never by drawing a marker of any kind around it. SINGLE PRODUCT ONLY: the background must never contain anything product-shaped — never draw a second, enlarged, blurred, faded, ghosted, silhouetted or watermark copy of the bag behind, around or bleeding off the edges of the main product. The background stays a plain clean surface. (Render more than one view of the product only where this brief explicitly asks for it.) PERMANENT DESIGN RULE — NO POINTING: never draw a callout line, leader line, connector stroke, stem, tick, bracket or dot that points at, reaches towards, or touches the product. Every label, card and badge is a fully detached, closed element floating with plain clean background between it and the product. The ONLY exception is a measurement arrow if one is explicitly specified later in this brief — nothing else may form a line.`;
 
 const PROMPTS = {
  white: i=>`${BASE(i)} IMPORTANT: Only ONE product photo is attached — use it exactly as captured. Render ONLY the bag in a STRAIGHT FRONT VIEW (facing the camera directly, not angled), perfectly centred on a pure white #FFFFFF background with a soft natural contact shadow under the base. No text, no props, no badges, no logo overlays. Clean marketplace main-image.`,
- hero: i=>`${BASE(i)} PREMIUM DREAMY PRODUCT HERO SHOT — a cinematic, photorealistic luxury beauty shot of the bag at its NATURAL real-world size (a normal-sized bag, NOT a giant monument or building), resting elegantly on a raised natural stone or rock pedestal/plinth at the centre of a magical, enchanting themed scene. The bag is the unmistakable HERO of the frame — crisp, sharp and in full focus, occupying roughly 45-55% of the image, presented like a high-end product hero photograph. ENVIRONMENT: a soft, dreamy, aspirational fantasy world that matches the bag's personality${i.theme?`, directly inspired by "${i.theme}" (scenery direction only — NEVER write this phrase as text anywhere in the image)`:`, derived from the bag's own colours and print — florals and drifting petals for a floral bag, tropical leaves, hibiscus and flowing water for a bright playful bag, and so on`}. Surround the bag with beautiful, oversized soft-focus themed elements colour-matched to the bag's own palette: giant dreamy flowers, floating petals, gentle swirling water ribbons, drifting sparkles and particles, soft glowing bokeh, silky flowing pastel fabric and a luminous dreamy sky.${i.age?` The mood should feel magical and enchanting to ${i.age}-year-olds.`:""} ABSOLUTELY NO PEOPLE: the image must contain NO humans of any kind — no figures, hands, silhouettes or crowds anywhere. LIGHTING: soft, cinematic, diffused light with a warm dreamy glow and a gentle rim light tracing the bag, a soft realistic contact shadow and subtle reflection where it rests on the pedestal. DEPTH OF FIELD: the fantasy background is softly blurred so the sharply-focused bag always stays the clear focal point. ${i.pname?`The spirit of the product range "${i.pname}" should be felt in the scene's mood (inspiration only — never written as text).`:""} ZERO text in the image — no overlaid brand wordmarks, no captions, no invented signage — only the bag's own printed branding exactly as it appears on the product.`,
+ hero: i=>`${BASE(i)} PREMIUM DREAMY PRODUCT HERO SHOT — a cinematic, photorealistic luxury beauty shot of the bag at its NATURAL real-world size (a normal-sized bag, NOT a giant monument or building), resting elegantly on a raised natural stone or rock pedestal/plinth at the centre of a magical, enchanting themed scene. The bag is the unmistakable HERO of the frame — crisp, sharp and in full focus, occupying roughly 45-55% of the image, presented like a high-end product hero photograph. ENVIRONMENT: a soft, dreamy, aspirational fantasy world themed entirely around ${themeDecor(i)} (scenery and mood direction only — NEVER write any of these words as text anywhere in the image). Surround the bag with beautiful, oversized soft-focus elements OF THAT theme, colour-matched to the bag's own palette, plus drifting sparkles and particles, soft glowing bokeh, silky flowing pastel fabric and a luminous dreamy sky.${i.age?` The mood should feel magical and enchanting to ${i.age}-year-olds.`:""} ABSOLUTELY NO PEOPLE: the image must contain NO humans of any kind — no figures, hands, silhouettes or crowds anywhere. LIGHTING: soft, cinematic, diffused light with a warm dreamy glow and a gentle rim light tracing the bag, a soft realistic contact shadow and subtle reflection where it rests on the pedestal. DEPTH OF FIELD: the fantasy background is softly blurred so the sharply-focused bag always stays the clear focal point. ${i.pname?`The spirit of the product range "${i.pname}" should be felt in the scene's mood (inspiration only — never written as text).`:""} ZERO text in the image — no overlaid brand wordmarks, no captions, no invented signage — only the bag's own printed branding exactly as it appears on the product.`,
  life: i=>`${BASE(i)} Photorealistic LIFESTYLE photo: a ${i.model==="No model"?"natural scene with the bag placed believably":"happy "+i.model.toLowerCase()+(isLuggage()?" walking while pulling the bag along by its fully extended telescopic handle, the bag upright on its wheels beside them, glancing back and smiling at camera":" wearing the bag on BOTH shoulders, looking back over the shoulder and smiling at camera")}${i.age?` (clearly age ${i.age})`:""}, at ${i.bg||(isLuggage()?"a bright, tidy airport terminal or hotel lobby":"a bright, tidy everyday Indian setting")}.${i.model!=="No model"&&i.modelDesc?` MODEL APPEARANCE: ${i.modelDesc}. The person must be an entirely fictional, generic individual matching this description — not a real or recognisable person.`:""} CRITICAL SCALE: the bag must be ${i.H||"correctly"} ${i.H?"inches tall":""} relative to the model's torso — not too big, not too small. Natural window light, shallow depth of field. ${i.age?`A small rounded purple badge in the top-left corner reads exactly "AGE: ${i.age}".`:`No badges, no overlays and no text anywhere in the image.`}`,
  comfort: i=>{
    const cardPart = i.comfort.length
@@ -858,7 +869,7 @@ const PROMPTS = {
    const viewPart = isLuggage()
      ? `Below, the bag perfectly centred at a three-quarter angle with the telescopic handle FULLY EXTENDED upward and all wheels clearly visible on the floor, exactly as the reference photos show them.`
      : `Below, the BACK VIEW of the bag perfectly centred showing back panel and straps.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these four words and nothing else: Comfort That Carries Well — the words Comfort That in dark text, the words Carries Well in an accent colour, separated by single plain spaces with no character of any kind before, between or after them. ${viewPart} ${cardPart} Background: ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel tone matching the bag's main colour"+(i.theme?` with subtle 3D ${i.theme} elements at the bottom`:'')}. Premium kids-catalogue style.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these four words and nothing else: Comfort That Carries Well — the words Comfort That in dark text, the words Carries Well in an accent colour, separated by single plain spaces with no character of any kind before, between or after them. ${viewPart} ${cardPart} Background: ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':`soft pastel tone matching the bag's main colour, with a few subtle 3D decorative elements of ${themeDecor(i)} resting only along the very bottom edge`}. Premium kids-catalogue style.`;
  },
  space: i=>{
    /* Reference "Space Story" layout: a large centre bag with FOUR corner photo
@@ -870,7 +881,7 @@ const PROMPTS = {
    const tiles = feats.length
      ? `In each of the FOUR corners place a separate rounded-rectangle PHOTO TILE with a soft pale-blue rounded background — each tile a REALISTIC CLOSE-UP PHOTOGRAPH of one specific storage area of THIS exact bag, derived faithfully from the reference photos (same bag, same colours, same print, same trims, same zips): ${feats.map((f, k) => `the ${pos[k]} tile shows the ${f.toLowerCase()} (that part of the bag in genuine real-world use — e.g. an open main compartment holding books, notebooks and a bottle; a front pocket with small items; side mesh pockets holding water bottles; the interior organiser)`).join("; ")}. The four tiles are evenly sized, clearly separated, sitting in the four corners well clear of the centre bag.`
      : `Do NOT draw any corner tiles — only the centre bag on a clean pastel background.`;
-   return `${BASE(i)} PREMIUM "SPACE STORY" STORAGE-SHOWCASE catalogue layout. COMPOSITION: the hero product bag stands upright and CLOSED at the CENTRE of the image, large, sharp and faithful to the reference photos. ${tiles} Leave the TOP-LEFT area of the image empty for a title, and leave a small BLANK strip directly BELOW each corner tile (for a caption) plus a small BLANK plain space centred on each tile's TOP edge (for an icon) — the app adds the title, captions and icons itself. CRITICAL — ABSOLUTELY NO TEXT AND NO ICONS anywhere in the image: do not draw any words, letters, numbers, captions, labels or feature icons; leave all those areas blank. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${i.theme?`, aside from a few small subtle 3D ${i.theme} elements only along the very bottom edge`:''}. Premium school-bag marketplace style.`;
+   return `${BASE(i)} PREMIUM "SPACE STORY" STORAGE-SHOWCASE catalogue layout. COMPOSITION: the hero product bag stands upright and CLOSED at the CENTRE of the image, large, sharp and faithful to the reference photos. ${tiles} Leave the TOP-LEFT area of the image empty for a title, and leave a small BLANK strip directly BELOW each corner tile (for a caption) plus a small BLANK plain space centred on each tile's TOP edge (for an icon) — the app adds the title, captions and icons itself. CRITICAL — ABSOLUTELY NO TEXT AND NO ICONS anywhere in the image: do not draw any words, letters, numbers, captions, labels or feature icons; leave all those areas blank. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
  },
  need: i=>{
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
@@ -878,14 +889,14 @@ const PROMPTS = {
    const badgePart = list.length
      ? `Exactly ${list.length} white rounded badge card${list.length>1?"s":""} arranged as neat floating side cards: split them between the far LEFT and far RIGHT edges of the image, with a wide empty background band separating each card from the bag. Each card has a small line icon on top and its label below in small dark text, in this order: ${list.map(b=>`"${b}"`).join(", ")}. Each badge appears exactly once, spelled letter-perfect, no other badges anywhere. The bag stands alone in the centre with the bottom fully visible — badges must never cover the bag.`
      : `Do NOT draw any badge cards, feature labels, icons or callouts — only the title and the bag, with clean empty space around the bag.`;
-   return `${BASE(i)} Catalogue infographic. Title at top centre inside a simple clean white rounded-rectangle pill outline with a smooth border, never a wavy label or speech bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view, scaled so the full bag remains visible between side badge columns. ${badgePart} Background: a flat, plain, evenly-lit soft pastel surface matching the bag's colour${i.theme?` with subtle ${i.theme} elements`:""}, filling the frame edge to edge — the bag appears ONCE and the background behind it is empty, containing no enlarged, faded or ghosted second bag and nothing else bag-shaped. No other text.`;
+   return `${BASE(i)} Catalogue infographic. Title at top centre inside a simple clean white rounded-rectangle pill outline with a smooth border, never a wavy label or speech bubble. The title is this EXACT phrase and nothing else: "EVERYTHING YOU NEED IN A BAG" — exactly six words, each word written ONCE, no word repeated, no extra syllables (the words "YOU NEED" may be in an accent colour, the rest dark). Bag centred front view, scaled so the full bag remains visible between side badge columns. ${badgePart} Background: a flat, plain, evenly-lit soft pastel surface matching the bag's colour${document.getElementById('whiteBgMode').checked?"":` with a few subtle decorative elements of ${themeDecor(i)}`}, filling the frame edge to edge — the bag appears ONCE and the background behind it is empty, containing no enlarged, faded or ghosted second bag and nothing else bag-shaped. No other text.`;
  },
  dims: i=>{
    /* The whole spec sheet (title, pill, three measurement arrows, warranty tag
       and capacity badge) is canvas-drawn by the app afterwards, so the model
       draws NOTHING but a single clean front view of the bag, left-of-centre,
       with generous empty margins for every overlay zone. */
-   return `${BASE(i)} Clean e-commerce product shot for a dimension spec sheet, on a soft PLAIN pale-lavender background (a smooth #F4EFFB studio backdrop) that is completely empty and even — no clouds, no stars, no rainbows, no props, no patterns, no decorations, no second bag, no ghosted or blurred bag, no reflection, nothing. Show EXACTLY ONE bag: a single FRONT-facing view of the product standing upright, sharp and fully in focus, rendered faithfully from the reference photos with the SAME colours, materials, zips, zipper pullers, trims, badges and proportions. COMPOSITION — LEAVE ROOM FOR OVERLAYS: place the bag in the LEFT-CENTRE of the frame, rendered at a COMPACT size with plenty of breathing room around it — its body occupying only from about 19% to 40% of the image WIDTH and from about 34% to 66% of the image HEIGHT (do NOT let the bag fill more than this). Keep every other area as completely empty plain lavender space with NOTHING in it: the entire TOP 20%, the entire BOTTOM 26%, the left 17% margin, and the WHOLE right 46% of the image — the app draws the title, a pill, the measurement arrows, a warranty tag and a capacity badge into those empty areas itself. CRITICAL — ABSOLUTELY NO TEXT, ICONS OR MEASUREMENTS: do NOT draw any title, words, letters, numbers, units, dimension arrows, measurement lines, ticks, the words HEIGHT/WIDTH/DEPTH, any INCH/IN/CM value, any warranty tag, any test icons, any pill/badge or any capacity marker anywhere in the image — only the single bag on the empty lavender backdrop.`;
+   return `${BASE(i)} Clean e-commerce product shot for a dimension spec sheet, on a soft PLAIN pastel background that is a very pale, desaturated tint of the bag's OWN dominant colour (a smooth clean studio backdrop — e.g. pale lavender for a purple bag, pale blue for a blue bag, pale pink for a pink bag, pale mint for a green bag), completely empty and even — no clouds, no stars, no rainbows, no props, no patterns, no decorations, no second bag, no ghosted or blurred bag, no reflection, nothing. Show EXACTLY ONE bag: a single FRONT-facing view of the product standing upright, sharp and fully in focus, rendered faithfully from the reference photos with the SAME colours, materials, zips, zipper pullers, trims, badges and proportions. COMPOSITION — LEAVE ROOM FOR OVERLAYS: place the bag in the LEFT-CENTRE of the frame, rendered at a COMPACT size with plenty of breathing room around it — its body occupying only from about 19% to 40% of the image WIDTH and from about 34% to 66% of the image HEIGHT (do NOT let the bag fill more than this). Keep every other area as completely empty plain pastel space with NOTHING in it: the entire TOP 20%, the entire BOTTOM 26%, the left 17% margin, and the WHOLE right 46% of the image — the app draws the title, a pill, the measurement arrows, a warranty tag and a capacity badge into those empty areas itself. CRITICAL — ABSOLUTELY NO TEXT, ICONS OR MEASUREMENTS: do NOT draw any title, words, letters, numbers, units, dimension arrows, measurement lines, ticks, the words HEIGHT/WIDTH/DEPTH, any INCH/IN/CM value, any warranty tag, any test icons, any pill/badge or any capacity marker anywhere in the image — only the single bag on the empty pastel backdrop.`;
  },
  fits: i=>{
    const frontAngleRule = `BAG ANGLE RULE: use the exact same FRONT ANGLE / FRONT VIEW as the first attached product photo. The front panel, front pocket, front artwork, front logo patch and front zipper layout must face the camera. Never show the back panel, shoulder straps, rear padding, rear handle view, side profile or any rotated/back-facing angle.`;
@@ -1345,6 +1356,54 @@ const DIM_TEST_ICONS = {
   }
 };
 
+/* ---- colour helpers for theming the dims accent to the bag ------------------- */
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  let h = 0, s = 0, l = (mx + mn) / 2;
+  if (mx !== mn) {
+    const dd = mx - mn;
+    s = l > 0.5 ? dd / (2 - mx - mn) : dd / (mx + mn);
+    if (mx === r) h = (g - b) / dd + (g < b ? 6 : 0);
+    else if (mx === g) h = (b - r) / dd + 2;
+    else h = (r - g) / dd + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hslToRgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+function rgbToHex(rgb) { return "#" + rgb.map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join(""); }
+/* Average colour of the bag's coloured pixels (skips whites, blacks and greys so
+   the accent follows the body colour, not the background or trims). */
+function sampleBagAccent(ctx, box, W, H) {
+  const x0 = Math.round(box.left + (box.right - box.left) * 0.18);
+  const x1 = Math.round(box.left + (box.right - box.left) * 0.82);
+  const y0 = Math.round(box.top + (box.bottom - box.top) * 0.18);
+  const y1 = Math.round(box.top + (box.bottom - box.top) * 0.82);
+  const w = Math.max(1, x1 - x0), h = Math.max(1, y1 - y0);
+  let d; try { d = ctx.getImageData(x0, y0, w, h).data; } catch (e) { return null; }
+  let rs = 0, gs = 0, bs = 0, n = 0;
+  for (let i = 0; i < d.length; i += 16) {          /* subsample every 4th px */
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if (mx > 238 && mn > 228) continue;              /* white */
+    if (mx < 42) continue;                           /* black */
+    if (mx - mn < 20) continue;                      /* greys — bias to the coloured body */
+    rs += r; gs += g; bs += b; n++;
+  }
+  if (n < 12) return null;
+  return [rs / n, gs / n, bs / n];
+}
+
 async function overlayDimsSheet(dataUrl, d, size) {
   const img = await loadImgEl(dataUrl);
   const W = img.width, H = img.height;
@@ -1353,7 +1412,9 @@ async function overlayDimsSheet(dataUrl, d, size) {
   const ctx = c.getContext("2d");
   ctx.drawImage(img, 0, 0);
 
-  const PURPLE = "#8B3AD6", PURPLE_DK = "#6D28B8", INK = "#3D2B63", GREY = "#6B6480";
+  /* accent + ink default to purple, but are re-derived from the bag's colour below */
+  let PURPLE = "#8B3AD6", INK = "#3D2B63";
+  const GREY = "#6B6480";
   const F = "Outfit, Poppins, Archivo, Arial, sans-serif";
 
   /* locate the single bag on the (still clean) generated image */
@@ -1362,6 +1423,17 @@ async function overlayDimsSheet(dataUrl, d, size) {
   let box = findFrontBag(sc.getContext("2d"), W, H);
   if (!box) box = { left: Math.round(W * 0.17), right: Math.round(W * 0.45), top: Math.round(H * 0.30), bottom: Math.round(H * 0.72) };
   if (box.right == null || box.right - box.left < W * 0.08) box.right = Math.min(Math.round(W * 0.47), box.left + Math.round(W * 0.28));
+
+  /* THEME THE ACCENT TO THE BAG: sample the bag's dominant colour and turn it into
+     a readable accent (title, pill, arrows, capacity) + a dark ink for labels, so
+     a purple bag gets purple, a blue bag blue, a pink bag pink, etc. */
+  const accRGB = sampleBagAccent(sc.getContext("2d"), box, W, H);
+  if (accRGB) {
+    const hsl = rgbToHsl(accRGB[0], accRGB[1], accRGB[2]);
+    const sat = Math.min(0.85, Math.max(0.5, hsl[1]));
+    PURPLE = rgbToHex(hslToRgb(hsl[0], sat, 0.42));
+    INK = rgbToHex(hslToRgb(hsl[0], Math.min(0.55, sat), 0.24));
+  }
 
   /* GUARANTEE a compact bag: image models ignore size hints, so if the drawn bag
      is bigger than the target, shrink the whole generated frame on-canvas and
