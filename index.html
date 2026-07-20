@@ -1309,6 +1309,24 @@ async function overlayDimsSheet(dataUrl, d, size) {
   if (!box) box = { left: Math.round(W * 0.17), right: Math.round(W * 0.45), top: Math.round(H * 0.30), bottom: Math.round(H * 0.72) };
   if (box.right == null || box.right - box.left < W * 0.08) box.right = Math.min(Math.round(W * 0.47), box.left + Math.round(W * 0.28));
 
+  /* GUARANTEE a compact bag: image models ignore size hints, so if the drawn bag
+     is bigger than the target, shrink the whole generated frame on-canvas and
+     re-anchor it left-of-centre. The plain lavender background scales with it and
+     the fill colour is sampled from a corner, so the rescale is seamless. Every
+     overlay below reads the updated box, so arrows/tag/badge follow the new size. */
+  const TARGET_W = 0.24, TARGET_H = 0.44;             /* max bag size as a fraction */
+  const bagWFrac = (box.right - box.left) / W, bagHFrac = (box.bottom - box.top) / H;
+  const s = Math.min(TARGET_W / bagWFrac, TARGET_H / bagHFrac, 1);
+  if (s < 0.97) {
+    const p = sc.getContext("2d").getImageData(2, 2, 1, 1).data;
+    const bg = `rgb(${p[0]},${p[1]},${p[2]})`;
+    const bagCx = (box.left + box.right) / 2, bagCy = (box.top + box.bottom) / 2;
+    const dx = W * 0.30 - bagCx * s, dy = H * 0.50 - bagCy * s;   /* land bag left-centre */
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(img, dx, dy, W * s, H * s);
+    box = { left: box.left * s + dx, right: box.right * s + dx, top: box.top * s + dy, bottom: box.bottom * s + dy };
+  }
+
   /* ---- Title + pill --------------------------------------------------------- */
   ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
   const titleSz = Math.round(W * 0.046);
