@@ -872,17 +872,20 @@ const PROMPTS = {
    return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these four words and nothing else: Comfort That Carries Well — the words Comfort That in dark text, the words Carries Well in an accent colour, separated by single plain spaces with no character of any kind before, between or after them. ${viewPart} ${cardPart} Background: ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':`soft pastel tone matching the bag's main colour, with a few subtle 3D decorative elements of ${themeDecor(i)} resting only along the very bottom edge`}. Premium kids-catalogue style.`;
  },
  space: i=>{
-   /* Storage-showcase layout: ONE large hero bag centred with FOUR SMALL corner
-      photo tiles. The app draws the title, per-tile icons and captions afterwards,
-      so the model draws only the bag + four photo tiles and renders NO text at all.
-      (The literal words "space story"/"storage showcase" are kept OUT of this
-      prompt because the model would otherwise render them as a garbled title.) */
-   const feats = i.space.slice(0, 4);
-   const pos = ["TOP-LEFT", "TOP-RIGHT", "BOTTOM-LEFT", "BOTTOM-RIGHT"];
+   /* Storage-showcase layout: ONE large hero bag centred, with the user's selected
+      storage areas shown as SMALL photo tiles arranged in two side columns (left
+      half down the left edge, right half down the right edge). The app draws the
+      title, per-tile icons and captions afterwards, so the model draws only the
+      bag + the photo tiles and renders NO text. (The words "space story"/"storage
+      showcase" are kept OUT of this prompt so the model won't render a garbled
+      title.) */
+   const feats = i.space.slice(0, 6);
+   const N = feats.length, leftN = Math.ceil(N / 2);
+   const posName = (k) => k < leftN ? `LEFT column, position ${k + 1} from the top` : `RIGHT column, position ${k - leftN + 1} from the top`;
    const tiles = feats.length
-     ? `In the corners place EXACTLY ${feats.length} SMALL rounded-rectangle PHOTO TILES — one in each of these corners: ${feats.map((f, k) => pos[k]).join(", ")} — each with a soft pale-blue rounded background and each MUCH SMALLER than the centre bag (only about 11-14% of the image width each — small neat thumbnails, not big panels). Each tile is a REALISTIC CLOSE-UP PHOTOGRAPH of one storage area of THIS exact bag, faithful to the reference photos (same bag, colours, print, trims, zips): ${feats.map((f, k) => `the ${pos[k]} tile shows the ${f.toLowerCase()} in genuine real-world use`).join("; ")}. Tuck the tiles right into their corners, leaving a wide clear pastel margin between them and the large centre bag. Draw EXACTLY ${feats.length} tiles — no more, no fewer, and no extra or blank tile.`
-     : `Do NOT draw any corner tiles — only the centre bag on a clean pastel background.`;
-   return `${BASE(i)} A premium marketplace "what fits inside" storage layout. COMPOSITION — THE BAG IS THE HERO: a SINGLE product bag stands upright and CLOSED at the EXACT CENTRE, sharp and faithful to the reference photos, and it is unmistakably the DOMINANT, LARGEST element of the image — occupying about 44-50% of the image width and 60-68% of the height, noticeably bigger than every corner tile. ${tiles} CRITICAL — NO TEXT AND NO TITLE ANYWHERE: do NOT draw any title, heading, banner, ribbon, wordmark, label, caption, watermark, letters, numbers or feature icons anywhere in the image — leave the top strip and the space just above and below each tile as clean empty pastel for the app's own title, icons and captions. Draw EXACTLY the centre bag and the four photo tiles and NOTHING else — no empty pills, blank strips, boxes, banners or extra cards. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
+     ? `Arrange EXACTLY ${N} SMALL rounded-rectangle PHOTO TILES in TWO vertical side columns — ${leftN} evenly spaced down the far LEFT edge and ${N - leftN} evenly spaced down the far RIGHT edge — each with a soft pale-blue rounded background and each MUCH SMALLER than the centre bag (only about 12-15% of the image width each — small neat thumbnails, not big panels). Each tile is a REALISTIC CLOSE-UP PHOTOGRAPH of one storage area of THIS exact bag, faithful to the reference photos (same bag, colours, print, trims, zips): ${feats.map((f, k) => `${posName(k)} = the ${f.toLowerCase()} in genuine real-world use`).join("; ")}. Tuck the tiles right against the left/right edges, leaving a wide clear pastel margin between them and the large centre bag. Draw EXACTLY ${N} tiles — no more, no fewer, and no extra or blank tile.`
+     : `Do NOT draw any tiles — only the centre bag on a clean pastel background.`;
+   return `${BASE(i)} A premium marketplace "what fits inside" storage layout. COMPOSITION — THE BAG IS THE HERO: a SINGLE product bag stands upright and CLOSED at the EXACT CENTRE, sharp and faithful to the reference photos, and it is unmistakably the DOMINANT, LARGEST element of the image — occupying about 46-52% of the image width and 62-70% of the height, noticeably bigger than every side tile. ${tiles} CRITICAL — NO TEXT AND NO TITLE ANYWHERE: do NOT draw any title, heading, banner, ribbon, wordmark, label, caption, watermark, letters, numbers or feature icons anywhere in the image — leave the top strip and the space just above and below each tile as clean empty pastel for the app's own title, icons and captions. Draw EXACTLY the centre bag and the ${N} photo tiles and NOTHING else — no empty pills, blank strips, boxes, banners or extra cards. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
  },
  need: i=>{
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
@@ -1229,30 +1232,38 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
     return {left:cl.s,right:cl.e,top,bottom:bot};
   };
 
-  /* title, top-left */
-  ctx.fillStyle="#1b1c22"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-  ctx.font=`800 ${Math.round(W*0.05)}px Syne, Outfit, Arial, sans-serif`;
-  ctx.fillText("SPACE STORY", Math.round(W*0.05), Math.round(H*0.085));
+  /* accent colour sampled from the centre bag, for the themed title */
+  let accent="#7A3FD0";
+  const bagAcc=sampleBagAccent(ctx,{left:Math.round(W*0.34),right:Math.round(W*0.66),top:Math.round(H*0.36),bottom:Math.round(H*0.74)},W,H);
+  if(bagAcc){ const hsl=rgbToHsl(bagAcc[0],bagAcc[1],bagAcc[2]); const sat=Math.min(0.85,Math.max(0.5,hsl[1])); accent=rgbToHex(hslToRgb(hsl[0],sat,0.42)); }
 
-  /* zones kept well away from the centre bag so a corner tile never merges with
-     it; capY is the lowest a caption may drop for that row, so top-row captions
-     stay tucked under their small tiles instead of floating into the middle */
-  const regions=[
-    {rx0:0.02,rx1:0.32,ry0:0.10,ry1:0.44,outer:"L",capY:0.38},   /* top-left    */
-    {rx0:0.68,rx1:0.98,ry0:0.10,ry1:0.44,outer:"R",capY:0.38},   /* top-right   */
-    {rx0:0.02,rx1:0.32,ry0:0.56,ry1:0.90,outer:"L",capY:0.90},   /* bottom-left */
-    {rx0:0.68,rx1:0.98,ry0:0.56,ry1:0.90,outer:"R",capY:0.90},   /* bottom-right*/
-  ];
-  const fb=[{cx:0.16,cy:0.24},{cx:0.84,cy:0.24},{cx:0.16,cy:0.74},{cx:0.84,cy:0.74}]; /* fallbacks */
+  /* title — ALWAYS centred at the top, in the bag's theme colour */
+  ctx.fillStyle=accent; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+  ctx.font=`800 ${Math.round(W*0.05)}px Syne, Outfit, Arial, sans-serif`;
+  ctx.fillText("SPACE STORY", W/2, Math.round(H*0.08));
+
+  /* Lay the selected tiles out in TWO side columns (left = first half, right =
+     second half) so ANY number the user selects is shown — not a fixed four.
+     Each region is one tile's vertical band; capY caps its caption drop. */
+  const N=labels.length;
+  const leftN=Math.ceil(N/2), rightN=N-leftN;
+  const regions=[];
+  const buildCol=(count,rx0,rx1,outer)=>{
+    const top=0.13, bandH=(0.93-top)/Math.max(1,count);
+    for(let j=0;j<count;j++){ const y0=top+bandH*j, y1=top+bandH*(j+1);
+      regions.push({rx0,rx1,ry0:y0+0.008,ry1:y1-0.02,outer,capY:y1-0.03}); }
+  };
+  buildCol(leftN,0.02,0.30,"L");
+  buildCol(rightN,0.70,0.98,"R");
   const iconR=Math.round(W*0.024);
 
-  for(let k=0;k<Math.min(4,labels.length);k++){
+  for(let k=0;k<N;k++){
     const r=regions[k], label=labels[k];
     const tile=detect(r.rx0,r.rx1,r.ry0,r.ry1,r.outer);
     let cx,topY,botY;
     if(tile){ cx=(tile.left+tile.right)/2; topY=tile.top; botY=tile.bottom; }
-    else { cx=W*fb[k].cx; topY=H*fb[k].cy-H*0.10; botY=H*fb[k].cy+H*0.10; }
-    /* never let the caption drop far below its small corner tile */
+    else { cx=W*(r.outer==="L"?0.16:0.84); botY=H*((r.ry0+r.ry1)/2)+H*0.05; topY=botY-H*0.12; }
+    /* never let the caption drop past this tile's band */
     botY=Math.min(botY, Math.round(H*r.capY));
 
     /* caption chip auto-fit + clamped, with the icon badge attached directly
@@ -1489,14 +1500,14 @@ async function overlayDimsSheet(dataUrl, d, size) {
      re-anchor it left-of-centre. The plain lavender background scales with it and
      the fill colour is sampled from a corner, so the rescale is seamless. Every
      overlay below reads the updated box, so arrows/tag/badge follow the new size. */
-  const TARGET_W = 0.31, TARGET_H = 0.56;             /* max bag size as a fraction */
+  const TARGET_W = 0.36, TARGET_H = 0.64;             /* max bag size as a fraction */
   const bagWFrac = (box.right - box.left) / W, bagHFrac = (box.bottom - box.top) / H;
   const s = Math.min(TARGET_W / bagWFrac, TARGET_H / bagHFrac, 1);
   if (s < 0.97) {
     const p = sc.getContext("2d").getImageData(2, 2, 1, 1).data;
     const bg = `rgb(${p[0]},${p[1]},${p[2]})`;
     const bagCx = (box.left + box.right) / 2, bagCy = (box.top + box.bottom) / 2;
-    const dx = W * 0.30 - bagCx * s, dy = H * 0.50 - bagCy * s;   /* land bag left-centre */
+    const dx = W * 0.33 - bagCx * s, dy = H * 0.50 - bagCy * s;   /* land bag left-centre */
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     ctx.drawImage(img, dx, dy, W * s, H * s);
     box = { left: box.left * s + dx, right: box.right * s + dx, top: box.top * s + dy, bottom: box.bottom * s + dy };
@@ -1567,39 +1578,13 @@ async function overlayDimsSheet(dataUrl, d, size) {
     ctx.textBaseline = "alphabetic";
   }
 
-  /* ---- DEPTH arrow (diagonal off the bottom-right corner) ------------------- */
-  if (d.D) {
-    const sx = box.right, sy = Math.min(box.bottom, Math.round(H * 0.76));
-    const ex = box.right + Math.round(W * 0.075), ey = Math.min(sy + Math.round(H * 0.05), H - Math.round(H * 0.12));
-    ctx.strokeStyle = PURPLE; ctx.fillStyle = PURPLE; ctx.lineWidth = lw;
-    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
-    const ang = Math.atan2(ey - sy, ex - sx);
-    const ah = (x, y, dir) => {
-      ctx.beginPath(); ctx.moveTo(x, y);
-      ctx.lineTo(x - Math.cos(ang - 0.4) * head * dir, y - Math.sin(ang - 0.4) * head * dir);
-      ctx.lineTo(x - Math.cos(ang + 0.4) * head * dir, y - Math.sin(ang + 0.4) * head * dir);
-      ctx.closePath(); ctx.fill();
-    };
-    ah(sx, sy, -1); ah(ex, ey, 1);
-    /* label starts JUST PAST the arrow tip and reads outward (down-right), with
-       the two lines offset to either side of the arrow line so neither sits on it
-       and it clears the width arrow/label at the corner */
-    ctx.save();
-    ctx.translate(ex + Math.cos(ang) * Math.round(W * 0.012), ey + Math.sin(ang) * Math.round(W * 0.012));
-    ctx.rotate(ang);
-    ctx.textAlign = "left"; ctx.textBaseline = "middle";
-    ctx.font = `800 ${Math.round(W * 0.020)}px ${F}`; ctx.fillStyle = INK;
-    ctx.fillText("DEPTH", 0, -Math.round(W * 0.011));
-    ctx.font = `600 ${Math.round(W * 0.015)}px ${F}`; ctx.fillStyle = "#333333";
-    ctx.fillText(`${d.D} IN (${d.Dcm} CM)`, 0, Math.round(W * 0.011));
-    ctx.restore();
-  }
+  /* DEPTH arrow intentionally omitted — only HEIGHT and WIDTH are shown. */
 
   /* ---- Warranty & quality-test tag (right side) ----------------------------- */
   /* right-align the tag to the frame edge, but push its left edge past the bag
      so it can never overlap the product no matter how wide the model drew it */
   const rightEdge = W - Math.round(W * 0.035);
-  const tx = Math.max(rightEdge - Math.round(W * 0.42), box.right + Math.round(W * 0.03));
+  const tx = Math.max(rightEdge - Math.round(W * 0.36), box.right + Math.round(W * 0.03));
   const tw = rightEdge - tx;
 
   /* Prefer the designed tag artwork (assets/warranty-tag.png). If it is missing,
@@ -1749,7 +1734,7 @@ document.getElementById("genBtn").addEventListener("click", async ()=>{
       let overlayLabels=null, overlayLayout=null, overlayIconMap=null, overlayDims=null, iP=i;
       if(document.getElementById("overlayMode").checked){
         if(id==="comfort" && i.comfort.length){ overlayLabels=i.comfort; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,comfort:[]}; }
-        if(id==="space" && i.space.length){ overlayLabels=i.space.slice(0,4); overlayLayout="spaceCorners"; overlayIconMap=FEATURE_ICONS; /* keep i.space so the prompt can name each corner photo */ }
+        if(id==="space" && i.space.length){ overlayLabels=i.space.slice(0,6); overlayLayout="spaceCorners"; overlayIconMap=FEATURE_ICONS; /* keep i.space so the prompt can name each tile photo */ }
         if(id==="need"){ const L=(i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
           if(L.length){ overlayLabels=L; overlayLayout="sides"; overlayIconMap=FEATURE_ICONS; iP={...i,needItems:""}; } }
       }
