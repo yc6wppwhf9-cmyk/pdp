@@ -884,7 +884,7 @@ const PROMPTS = {
      : (rightN === 1 ? "on the far RIGHT edge" : `down the far RIGHT edge, position ${k - leftN + 1} of ${rightN} from the top`);
    const insetList = feats.map((f, k) => `${slot(k)}: an opened / in-use premium close-up of the ${f.toLowerCase()}`).join("; ");
    const insets = feats.length
-     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about 11-13% of the image width (small neat thumbnails, never more than 13%) — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it. IMPORTANT: keep the ENTIRE TOP 18% of the image completely clear and empty (no insets, nothing there) — that top strip is reserved for a centred title the app adds; the topmost insets must start BELOW that strip.`
+     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about 11-13% of the image width (small neat thumbnails, never more than 13%) — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it. IMPORTANT LAYOUT: keep the top 18% strip clear for a centred title the app adds, then SPACE THE INSETS EVENLY down the FULL height of the left and right edges — the topmost insets begin just under that title strip (around 22% of the image height) and the lowest end near the bottom (around 92%), so the insets are spread out and fill the side edges evenly, NOT clustered in the lower half and NOT leaving a big blank gap under the title.`
      : `Do NOT add any insets — only the centre bag on a clean pastel background.`;
    return `${BASE(i)} Premium Amazon product infographic. The uploaded backpack is the only hero product — keep it 100% IDENTICAL to the reference. Centre the backpack vertically and horizontally. The backpack must visually occupy about HALF of the canvas width and be about 4 TIMES LARGER than each inset, remaining the dominant visual focus. ${insets} Background: flat pastel ${document.getElementById('whiteBgMode').checked?'white #FFFFFF':`${i.colour?`(a pale, desaturated tint of the bag's ${i.colour})`:"colour that is a pale tint of the bag"}`} with a soft studio shadow. Luxury Amazon listing style — ultra clean, minimal, photorealistic. NO text, NO labels, NO icons, NO title, NO measurements, NO badges, NO decorative objects, and NO duplicate, ghosted or second backpack anywhere (the app adds the title, icons and captions itself).`;
  },
@@ -1284,19 +1284,20 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
     const iGap=Math.round(H*0.005);
     let chy=Math.min(botY+iconR*2+iGap+Math.round(H*0.006), H-chH-Math.round(H*0.01));
     const iy=chy-iGap-iconR;
-    /* icon badge */
+    /* icon badge — white circle with a themed accent ring */
     ctx.beginPath(); ctx.arc(cx,iy,iconR,0,Math.PI*2);
     ctx.fillStyle="#ffffff"; ctx.fill();
-    ctx.strokeStyle="#dbe4ee"; ctx.lineWidth=Math.max(1,W*0.0013); ctx.stroke();
+    ctx.strokeStyle=accent; ctx.lineWidth=Math.max(1.2,W*0.0016); ctx.stroke();
     const bk=label.replace(/^\d+\s+/,"").replace(/s$/i,"");
     const iconSrc=iconMap&&(iconMap[label]||iconMap[bk]||iconMap[bk+"s"]||iconMap[bk+"S"]);
     if(iconSrc){ try{ const ic=await loadImgEl(iconSrc); const sz=iconR*1.2; ctx.drawImage(ic,cx-sz/2,iy-sz/2,sz,sz); }catch(e){} }
-    /* caption chip */
+    /* caption chip — white pill with a themed accent border + accent text */
     ctx.save();
     ctx.shadowColor="rgba(20,40,70,0.16)"; ctx.shadowBlur=W*0.012; ctx.shadowOffsetY=W*0.003;
     roundRectPath(ctx,chx,chy,chW,chH,chH/2); ctx.fillStyle="#ffffff"; ctx.fill();
     ctx.restore();
-    ctx.fillStyle="#20344f"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    roundRectPath(ctx,chx,chy,chW,chH,chH/2); ctx.strokeStyle=accent; ctx.lineWidth=Math.max(1.2,W*0.0016); ctx.stroke();
+    ctx.fillStyle=accent; ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText(label,chx+chW/2,chy+chH/2);
   }
   return c.toDataURL("image/png");
