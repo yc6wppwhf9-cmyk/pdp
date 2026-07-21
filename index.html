@@ -879,12 +879,14 @@ const PROMPTS = {
       captions on top, so the model renders NO text. */
    const feats = i.space.slice(0, 6);
    const N = feats.length, leftN = Math.ceil(N / 2), rightN = N - leftN;
+   const perCol = Math.max(leftN, rightN);                 /* most tiles in one column */
+   const sizePct = perCol >= 3 ? "8-10%" : (perCol === 2 ? "10-12%" : "13-15%");
    const slot = (k) => k < leftN
      ? (leftN === 1 ? "on the far LEFT edge" : `down the far LEFT edge, position ${k + 1} of ${leftN} from the top`)
      : (rightN === 1 ? "on the far RIGHT edge" : `down the far RIGHT edge, position ${k - leftN + 1} of ${rightN} from the top`);
    const insetList = feats.map((f, k) => `${slot(k)}: an opened / in-use premium close-up of the ${f.toLowerCase()}`).join("; ");
    const insets = feats.length
-     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about 11-13% of the image width (small neat thumbnails, never more than 13%) — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it. IMPORTANT LAYOUT: keep the top 18% strip clear for a centred title the app adds, then SPACE THE INSETS EVENLY down the FULL height of the left and right edges — the topmost insets begin just under that title strip (around 22% of the image height) and the lowest end near the bottom (around 92%), so the insets are spread out and fill the side edges evenly, NOT clustered in the lower half and NOT leaving a big blank gap under the title.`
+     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about ${sizePct} of the image width (small neat thumbnails) with a clear gap BELOW each inset for a caption — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it. IMPORTANT LAYOUT: keep the top 18% strip clear for a centred title the app adds, then SPACE THE INSETS EVENLY down the FULL height of the left and right edges — the topmost insets begin just under that title strip (around 22% of the image height) and the lowest end near the bottom (around 92%), so the insets are spread out and fill the side edges evenly, NOT clustered in the lower half and NOT leaving a big blank gap under the title.`
      : `Do NOT add any insets — only the centre bag on a clean pastel background.`;
    return `${BASE(i)} Premium Amazon product infographic. The uploaded backpack is the only hero product — keep it 100% IDENTICAL to the reference. Centre the backpack vertically and horizontally. The backpack must visually occupy about HALF of the canvas width and be about 4 TIMES LARGER than each inset, remaining the dominant visual focus. ${insets} Background: flat pastel ${document.getElementById('whiteBgMode').checked?'white #FFFFFF':`${i.colour?`(a pale, desaturated tint of the bag's ${i.colour})`:"colour that is a pale tint of the bag"}`} with a soft studio shadow. Luxury Amazon listing style — ultra clean, minimal, photorealistic. NO text, NO labels, NO icons, NO title, NO measurements, NO badges, NO decorative objects, and NO duplicate, ghosted or second backpack anywhere (the app adds the title, icons and captions itself).`;
  },
@@ -1260,7 +1262,8 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
   };
   buildCol(leftN,0.02,0.27,"L");
   buildCol(rightN,0.73,0.98,"R");
-  const iconR=Math.round(W*0.024);
+  const dense=Math.max(leftN,rightN)>=3;             /* 5-6 insets: shrink chrome */
+  const iconR=Math.round(W*(dense?0.019:0.024));
 
   for(let k=0;k<N;k++){
     const r=regions[k], label=labels[k];
@@ -1280,7 +1283,7 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
 
     /* caption chip auto-fit + clamped, with the icon badge attached directly
        ABOVE it so the icon always tracks its own tile/caption (no floating) */
-    let cs=Math.round(W*0.019); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`;
+    let cs=Math.round(W*(dense?0.016:0.019)); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`;
     const maxCap=W*0.24;
     if(ctx.measureText(label).width>maxCap){ cs=Math.max(9,Math.floor(cs*maxCap/ctx.measureText(label).width)); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`; }
     const tw=ctx.measureText(label).width, chW=tw+Math.round(W*0.04), chH=Math.round(cs*2.2);
