@@ -886,9 +886,9 @@ const PROMPTS = {
      : (rightN === 1 ? "on the far RIGHT edge" : `down the far RIGHT edge, position ${k - leftN + 1} of ${rightN} from the top`);
    const insetList = feats.map((f, k) => `${slot(k)}: an opened / in-use premium close-up of the ${f.toLowerCase()}`).join("; ");
    const insets = feats.length
-     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about ${sizePct} of the image width (small neat thumbnails) with a clear gap BELOW each inset for a caption — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it. IMPORTANT LAYOUT: keep the top 18% strip clear for a centred title the app adds, then SPACE THE INSETS EVENLY down the FULL height of the left and right edges — the topmost insets begin just under that title strip (around 22% of the image height) and the lowest end near the bottom (around 92%), so the insets are spread out and fill the side edges evenly, NOT clustered in the lower half and NOT leaving a big blank gap under the title.`
+     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about ${sizePct} of the image width (small neat thumbnails), leaving a small empty margin of plain background below each inset — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it. IMPORTANT LAYOUT: keep the top 18% strip clear for a centred title the app adds, then SPACE THE INSETS EVENLY down the FULL height of the left and right edges — the topmost insets begin just under that title strip (around 22% of the image height) and the lowest end near the bottom (around 92%), so the insets are spread out and fill the side edges evenly, NOT clustered in the lower half and NOT leaving a big blank gap under the title.`
      : `Do NOT add any insets — only the centre bag on a clean pastel background.`;
-   return `${BASE(i)} Premium Amazon product infographic. The uploaded backpack is the only hero product — keep it 100% IDENTICAL to the reference. Centre the backpack vertically and horizontally. The backpack must visually occupy about HALF of the canvas width and be about 4 TIMES LARGER than each inset, remaining the dominant visual focus. ${insets} Background: flat pastel ${document.getElementById('whiteBgMode').checked?'white #FFFFFF':`${i.colour?`(a pale, desaturated tint of the bag's ${i.colour})`:"colour that is a pale tint of the bag"}`} with a soft studio shadow. Luxury Amazon listing style — ultra clean, minimal, photorealistic. NO text, NO labels, NO icons, NO title, NO measurements, NO badges, NO decorative objects, and NO duplicate, ghosted or second backpack anywhere (the app adds the title, icons and captions itself).`;
+   return `${BASE(i)} Premium Amazon product infographic. The uploaded backpack is the only hero product — keep it 100% IDENTICAL to the reference. Centre the backpack vertically and horizontally. The backpack must visually occupy about HALF of the canvas width and be about 4 TIMES LARGER than each inset, remaining the dominant visual focus. ${insets} Background: a flat, even, soft ${document.getElementById('whiteBgMode').checked?'clean white #FFFFFF':`PASTEL wash that is a pale, light, desaturated tint of the bag's OWN ${i.colour?`${i.colour} `:"main "}colour (for a blue bag a pale sky-blue, for a pink bag a pale pink, etc.) — clearly the same colour family as the bag, NEVER beige, cream, tan, grey or off-white`} with a soft studio shadow. Luxury Amazon listing style — ultra clean, minimal, photorealistic. NO text, NO labels, NO icons, NO title, NO measurements, NO badges, NO decorative objects, NO caption boxes, NO pills, NO empty or blank rounded rectangles/cards, and NO duplicate, ghosted or second backpack anywhere (the app adds the title, icons and captions itself — leave that space as plain empty background).`;
  },
  need: i=>{
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
@@ -1463,26 +1463,34 @@ function hslToRgb(h, s, l) {
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 function rgbToHex(rgb) { return "#" + rgb.map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join(""); }
-/* Average colour of the bag's coloured pixels (skips whites, blacks and greys so
-   the accent follows the body colour, not the background or trims). */
+/* DOMINANT colour of the bag: bins the coloured pixels by hue (weighted by
+   saturation) and returns the average of the busiest bin. Averaging every pixel
+   muddies a multi-colour print to grey; the dominant-hue bin stays clean (e.g. a
+   blue ocean bag returns blue, not teal-grey). Skips whites, blacks and greys. */
 function sampleBagAccent(ctx, box, W, H) {
-  const x0 = Math.round(box.left + (box.right - box.left) * 0.18);
-  const x1 = Math.round(box.left + (box.right - box.left) * 0.82);
-  const y0 = Math.round(box.top + (box.bottom - box.top) * 0.18);
-  const y1 = Math.round(box.top + (box.bottom - box.top) * 0.82);
+  const x0 = Math.round(box.left + (box.right - box.left) * 0.15);
+  const x1 = Math.round(box.left + (box.right - box.left) * 0.85);
+  const y0 = Math.round(box.top + (box.bottom - box.top) * 0.15);
+  const y1 = Math.round(box.top + (box.bottom - box.top) * 0.85);
   const w = Math.max(1, x1 - x0), h = Math.max(1, y1 - y0);
   let d; try { d = ctx.getImageData(x0, y0, w, h).data; } catch (e) { return null; }
-  let rs = 0, gs = 0, bs = 0, n = 0;
+  const BINS = 12, wt = new Array(BINS).fill(0), acc = Array.from({ length: BINS }, () => [0, 0, 0, 0]);
+  let n = 0;
   for (let i = 0; i < d.length; i += 16) {          /* subsample every 4th px */
     const r = d[i], g = d[i + 1], b = d[i + 2];
     const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
     if (mx > 238 && mn > 228) continue;              /* white */
     if (mx < 42) continue;                           /* black */
-    if (mx - mn < 20) continue;                      /* greys — bias to the coloured body */
-    rs += r; gs += g; bs += b; n++;
+    if (mx - mn < 28) continue;                      /* greys — need real colour */
+    const hsl = rgbToHsl(r, g, b), bi = Math.min(BINS - 1, Math.floor(hsl[0] * BINS));
+    wt[bi] += hsl[1];                                /* weight by saturation */
+    acc[bi][0] += r; acc[bi][1] += g; acc[bi][2] += b; acc[bi][3]++;
+    n++;
   }
   if (n < 12) return null;
-  return [rs / n, gs / n, bs / n];
+  let best = 0; for (let i = 1; i < BINS; i++) if (wt[i] > wt[best]) best = i;
+  const c = acc[best]; if (c[3] < 1) return null;
+  return [c[0] / c[3], c[1] / c[3], c[2] / c[3]];
 }
 
 async function overlayDimsSheet(dataUrl, d, size) {
