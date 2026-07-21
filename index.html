@@ -1479,7 +1479,7 @@ async function overlayDimsSheet(dataUrl, d, size) {
      re-anchor it left-of-centre. The plain lavender background scales with it and
      the fill colour is sampled from a corner, so the rescale is seamless. Every
      overlay below reads the updated box, so arrows/tag/badge follow the new size. */
-  const TARGET_W = 0.24, TARGET_H = 0.44;             /* max bag size as a fraction */
+  const TARGET_W = 0.31, TARGET_H = 0.56;             /* max bag size as a fraction */
   const bagWFrac = (box.right - box.left) / W, bagHFrac = (box.bottom - box.top) / H;
   const s = Math.min(TARGET_W / bagWFrac, TARGET_H / bagHFrac, 1);
   if (s < 0.97) {
@@ -1492,17 +1492,20 @@ async function overlayDimsSheet(dataUrl, d, size) {
     box = { left: box.left * s + dx, right: box.right * s + dx, top: box.top * s + dy, bottom: box.bottom * s + dy };
   }
 
-  /* ---- Title + pill --------------------------------------------------------- */
+  /* ---- Title + subtitle + pill ---------------------------------------------- */
   ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-  const titleSz = Math.round(W * 0.046);
+  const titleSz = Math.round(W * 0.044);
   ctx.font = `800 ${titleSz}px ${F}`; ctx.fillStyle = PURPLE;
-  ctx.fillText("Designed for Everyday Use", W / 2, Math.round(H * 0.06));
+  ctx.fillText("Designed for Everyday Use", W / 2, Math.round(H * 0.05));
+  const subSz = Math.round(W * 0.023);
+  ctx.font = `600 ${subSz}px ${F}`; ctx.fillStyle = "#3b3b45";
+  ctx.fillText("Lightweight. Durable. Reliable.", W / 2, Math.round(H * 0.082));
   const pillTxt = "Dimensions (LxWxD)";
-  const pillSz = Math.round(W * 0.028);
+  const pillSz = Math.round(W * 0.027);
   ctx.font = `700 ${pillSz}px ${F}`;
   const pw = ctx.measureText(pillTxt).width + Math.round(W * 0.055);
-  const ph = Math.round(pillSz * 1.95);
-  const px = W / 2 - pw / 2, py = Math.round(H * 0.078);
+  const ph = Math.round(pillSz * 1.9);
+  const px = W / 2 - pw / 2, py = Math.round(H * 0.095);
   _rr(ctx, px, py, pw, ph, ph / 2); ctx.fillStyle = PURPLE; ctx.fill();
   ctx.fillStyle = "#ffffff"; ctx.textBaseline = "middle";
   ctx.fillText(pillTxt, W / 2, py + ph / 2);
@@ -1521,15 +1524,18 @@ async function overlayDimsSheet(dataUrl, d, size) {
     const tick = Math.round(W * 0.02);
     ctx.beginPath(); ctx.moveTo(ax - tick, box.top); ctx.lineTo(ax + tick, box.top);
     ctx.moveTo(ax - tick, box.bottom); ctx.lineTo(ax + tick, box.bottom); ctx.stroke();
-    /* label centred in the left margin, auto-fit to the available width */
-    let hSz = Math.round(W * 0.03);
-    const avail = ax - Math.round(W * 0.03);
-    ctx.font = `800 ${hSz}px ${F}`;
-    const txt = `${d.H} INCH`;
-    if (ctx.measureText(txt).width > avail) { hSz = Math.floor(hSz * avail / ctx.measureText(txt).width); ctx.font = `800 ${hSz}px ${F}`; }
-    ctx.fillStyle = INK; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(txt, ax / 2, (box.top + box.bottom) / 2);
-    ctx.textBaseline = "alphabetic";
+    /* rotated two-column label in the left margin: HEIGHT then the value+cm */
+    const cyMid = (box.top + box.bottom) / 2;
+    const nameSz = Math.round(W * 0.026), valSz = Math.round(W * 0.019);
+    const rotCol = (x, text, font, fill) => {
+      ctx.save(); ctx.translate(x, cyMid); ctx.rotate(-Math.PI / 2);
+      ctx.font = font; ctx.fillStyle = fill; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(text, 0, 0); ctx.restore();
+    };
+    const valX = ax - Math.round(W * 0.016) - valSz / 2;
+    const nameX = valX - valSz / 2 - Math.round(W * 0.008) - nameSz / 2;
+    rotCol(valX, `${d.H} IN (${d.Hcm} CM)`, `600 ${valSz}px ${F}`, "#333333");
+    rotCol(nameX, "HEIGHT", `800 ${nameSz}px ${F}`, INK);
   }
 
   /* ---- WIDTH arrow (under the bag) ------------------------------------------ */
@@ -1542,9 +1548,12 @@ async function overlayDimsSheet(dataUrl, d, size) {
     const tick = Math.round(W * 0.02);
     ctx.beginPath(); ctx.moveTo(box.left, wy - tick); ctx.lineTo(box.left, wy + tick);
     ctx.moveTo(box.right, wy - tick); ctx.lineTo(box.right, wy + tick); ctx.stroke();
-    ctx.font = `800 ${Math.round(W * 0.03)}px ${F}`; ctx.fillStyle = INK;
+    const wCx = (box.left + box.right) / 2, wLy = wy + Math.round(H * 0.013);
     ctx.textAlign = "center"; ctx.textBaseline = "top";
-    ctx.fillText(`${d.W} INCH`, (box.left + box.right) / 2, wy + Math.round(H * 0.012));
+    ctx.font = `800 ${Math.round(W * 0.026)}px ${F}`; ctx.fillStyle = INK;
+    ctx.fillText("WIDTH", wCx, wLy);
+    ctx.font = `600 ${Math.round(W * 0.019)}px ${F}`; ctx.fillStyle = "#333333";
+    ctx.fillText(`${d.W} IN (${d.Wcm} CM)`, wCx, wLy + Math.round(W * 0.03));
     ctx.textBaseline = "alphabetic";
   }
 
@@ -1566,9 +1575,12 @@ async function overlayDimsSheet(dataUrl, d, size) {
     ctx.save();
     ctx.translate((sx + ex) / 2 + Math.round(W * 0.028), (sy + ey) / 2 + Math.round(H * 0.006));
     ctx.rotate(ang);
-    ctx.font = `800 ${Math.round(W * 0.026)}px ${F}`; ctx.fillStyle = INK;
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(`${d.D} INCH`, 0, 0);
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    const dOff = Math.round(W * 0.010);
+    ctx.font = `800 ${Math.round(W * 0.022)}px ${F}`; ctx.fillStyle = INK;
+    ctx.fillText("DEPTH", 0, dOff);
+    ctx.font = `600 ${Math.round(W * 0.016)}px ${F}`; ctx.fillStyle = "#333333";
+    ctx.fillText(`${d.D} IN (${d.Dcm} CM)`, 0, dOff + Math.round(W * 0.024));
     ctx.restore();
   }
 
