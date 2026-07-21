@@ -884,7 +884,7 @@ const PROMPTS = {
      : (rightN === 1 ? "on the far RIGHT edge" : `down the far RIGHT edge, position ${k - leftN + 1} of ${rightN} from the top`);
    const insetList = feats.map((f, k) => `${slot(k)}: an opened / in-use premium close-up of the ${f.toLowerCase()}`).join("; ");
    const insets = feats.length
-     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about 11-13% of the image width (small neat thumbnails, never more than 13%) — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it.`
+     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about 11-13% of the image width (small neat thumbnails, never more than 13%) — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it. IMPORTANT: keep the ENTIRE TOP 18% of the image completely clear and empty (no insets, nothing there) — that top strip is reserved for a centred title the app adds; the topmost insets must start BELOW that strip.`
      : `Do NOT add any insets — only the centre bag on a clean pastel background.`;
    return `${BASE(i)} Premium Amazon product infographic. The uploaded backpack is the only hero product — keep it 100% IDENTICAL to the reference. Centre the backpack vertically and horizontally. The backpack must visually occupy about HALF of the canvas width and be about 4 TIMES LARGER than each inset, remaining the dominant visual focus. ${insets} Background: flat pastel ${document.getElementById('whiteBgMode').checked?'white #FFFFFF':`${i.colour?`(a pale, desaturated tint of the bag's ${i.colour})`:"colour that is a pale tint of the bag"}`} with a soft studio shadow. Luxury Amazon listing style — ultra clean, minimal, photorealistic. NO text, NO labels, NO icons, NO title, NO measurements, NO badges, NO decorative objects, and NO duplicate, ghosted or second backpack anywhere (the app adds the title, icons and captions itself).`;
  },
@@ -1240,8 +1240,8 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
 
   /* title — ALWAYS centred at the top, in the bag's theme colour */
   ctx.fillStyle=accent; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-  ctx.font=`800 ${Math.round(W*0.05)}px Syne, Outfit, Arial, sans-serif`;
-  ctx.fillText("SPACE STORY", W/2, Math.round(H*0.08));
+  ctx.font=`800 ${Math.round(W*0.046)}px Syne, Outfit, Arial, sans-serif`;
+  ctx.fillText("SPACE STORY", W/2, Math.round(H*0.085));
 
   /* Lay the selected tiles out in TWO side columns (left = first half, right =
      second half) so ANY number the user selects is shown — not a fixed four.
@@ -1250,7 +1250,7 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
   const leftN=Math.ceil(N/2), rightN=N-leftN;
   const regions=[];
   const buildCol=(count,rx0,rx1,outer)=>{
-    const top=0.13, bandH=(0.93-top)/Math.max(1,count);
+    const top=0.19, bandH=(0.95-top)/Math.max(1,count);
     for(let j=0;j<count;j++){ const y0=top+bandH*j, y1=top+bandH*(j+1);
       regions.push({rx0,rx1,ry0:y0+0.008,ry1:y1-0.02,outer,capY:y1-0.03}); }
   };
@@ -1512,7 +1512,7 @@ async function overlayDimsSheet(dataUrl, d, size) {
      re-anchor it left-of-centre. The plain lavender background scales with it and
      the fill colour is sampled from a corner, so the rescale is seamless. Every
      overlay below reads the updated box, so arrows/tag/badge follow the new size. */
-  const TARGET_W = 0.31, TARGET_H = 0.55;             /* max bag size as a fraction */
+  const TARGET_W = 0.32, TARGET_H = 0.55;             /* max bag size as a fraction */
   const bagWFrac = (box.right - box.left) / W, bagHFrac = (box.bottom - box.top) / H;
   const s = Math.min(TARGET_W / bagWFrac, TARGET_H / bagHFrac, 1);
   if (s < 0.97) {
