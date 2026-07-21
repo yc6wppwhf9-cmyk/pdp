@@ -1512,7 +1512,7 @@ async function overlayDimsSheet(dataUrl, d, size) {
      re-anchor it left-of-centre. The plain lavender background scales with it and
      the fill colour is sampled from a corner, so the rescale is seamless. Every
      overlay below reads the updated box, so arrows/tag/badge follow the new size. */
-  const TARGET_W = 0.36, TARGET_H = 0.64;             /* max bag size as a fraction */
+  const TARGET_W = 0.31, TARGET_H = 0.55;             /* max bag size as a fraction */
   const bagWFrac = (box.right - box.left) / W, bagHFrac = (box.bottom - box.top) / H;
   const s = Math.min(TARGET_W / bagWFrac, TARGET_H / bagHFrac, 1);
   if (s < 0.97) {
