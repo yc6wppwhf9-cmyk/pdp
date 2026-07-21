@@ -872,20 +872,21 @@ const PROMPTS = {
    return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these four words and nothing else: Comfort That Carries Well — the words Comfort That in dark text, the words Carries Well in an accent colour, separated by single plain spaces with no character of any kind before, between or after them. ${viewPart} ${cardPart} Background: ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':`soft pastel tone matching the bag's main colour, with a few subtle 3D decorative elements of ${themeDecor(i)} resting only along the very bottom edge`}. Premium kids-catalogue style.`;
  },
  space: i=>{
-   /* Storage-showcase layout: ONE large hero bag centred, with the user's selected
-      storage areas shown as SMALL photo tiles arranged in two side columns (left
-      half down the left edge, right half down the right edge). The app draws the
-      title, per-tile icons and captions afterwards, so the model draws only the
-      bag + the photo tiles and renders NO text. (The words "space story"/"storage
-      showcase" are kept OUT of this prompt so the model won't render a garbled
-      title.) */
+   /* Clean "premium Amazon infographic" layout (adapted from the user's prompt):
+      one large hero bag centred, with the user's selected storage areas as small
+      identical photo insets down the far left/right edges. Count and content are
+      driven by the selection, not hard-coded. The app draws the title, icons and
+      captions on top, so the model renders NO text. */
    const feats = i.space.slice(0, 6);
-   const N = feats.length, leftN = Math.ceil(N / 2);
-   const posName = (k) => k < leftN ? `LEFT column, position ${k + 1} from the top` : `RIGHT column, position ${k - leftN + 1} from the top`;
-   const tiles = feats.length
-     ? `Arrange EXACTLY ${N} SMALL rounded-rectangle PHOTO TILES in TWO vertical side columns — ${leftN} evenly spaced down the far LEFT edge and ${N - leftN} evenly spaced down the far RIGHT edge — each with a soft pale-blue rounded background and each MUCH SMALLER than the centre bag (only about 12-15% of the image width each — small neat thumbnails, not big panels). Each tile is a REALISTIC CLOSE-UP PHOTOGRAPH of one storage area of THIS exact bag, faithful to the reference photos (same bag, colours, print, trims, zips): ${feats.map((f, k) => `${posName(k)} = the ${f.toLowerCase()} in genuine real-world use`).join("; ")}. Tuck the tiles right against the left/right edges, leaving a wide clear pastel margin between them and the large centre bag. Draw EXACTLY ${N} tiles — no more, no fewer, and no extra or blank tile.`
-     : `Do NOT draw any tiles — only the centre bag on a clean pastel background.`;
-   return `${BASE(i)} A premium marketplace "what fits inside" storage layout. COMPOSITION — THE BAG IS THE HERO: a SINGLE product bag stands upright and CLOSED at the EXACT CENTRE, sharp and faithful to the reference photos, and it is unmistakably the DOMINANT, LARGEST element of the image — occupying about 46-52% of the image width and 62-70% of the height, noticeably bigger than every side tile. ${tiles} CRITICAL — NO TEXT AND NO TITLE ANYWHERE: do NOT draw any title, heading, banner, ribbon, wordmark, label, caption, watermark, letters, numbers or feature icons anywhere in the image — leave the top strip and the space just above and below each tile as clean empty pastel for the app's own title, icons and captions. Draw EXACTLY the centre bag and the ${N} photo tiles and NOTHING else — no empty pills, blank strips, boxes, banners or extra cards. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
+   const N = feats.length, leftN = Math.ceil(N / 2), rightN = N - leftN;
+   const slot = (k) => k < leftN
+     ? (leftN === 1 ? "on the far LEFT edge" : `down the far LEFT edge, position ${k + 1} of ${leftN} from the top`)
+     : (rightN === 1 ? "on the far RIGHT edge" : `down the far RIGHT edge, position ${k - leftN + 1} of ${rightN} from the top`);
+   const insetList = feats.map((f, k) => `${slot(k)}: an opened / in-use premium close-up of the ${f.toLowerCase()}`).join("; ");
+   const insets = feats.length
+     ? `Create EXACTLY ${N} small rounded-rectangle PHOTO INSETS, ALL IDENTICAL in size and each only about 11-13% of the image width (small neat thumbnails, never more than 13%) — ${insetList}. Each inset is a premium product close-up PHOTOGRAPH of that storage area of THIS exact bag (same bag, colours, print, trims, zips). EVERY inset MUST be completely FILLED with a real photo — NEVER an empty, blank, plain, faded or placeholder rounded rectangle; if a slot would be empty, simply do not draw it.`
+     : `Do NOT add any insets — only the centre bag on a clean pastel background.`;
+   return `${BASE(i)} Premium Amazon product infographic. The uploaded backpack is the only hero product — keep it 100% IDENTICAL to the reference. Centre the backpack vertically and horizontally. The backpack must visually occupy about HALF of the canvas width and be about 4 TIMES LARGER than each inset, remaining the dominant visual focus. ${insets} Background: flat pastel ${document.getElementById('whiteBgMode').checked?'white #FFFFFF':`${i.colour?`(a pale, desaturated tint of the bag's ${i.colour})`:"colour that is a pale tint of the bag"}`} with a soft studio shadow. Luxury Amazon listing style — ultra clean, minimal, photorealistic. NO text, NO labels, NO icons, NO title, NO measurements, NO badges, NO decorative objects, and NO duplicate, ghosted or second backpack anywhere (the app adds the title, icons and captions itself).`;
  },
  need: i=>{
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
