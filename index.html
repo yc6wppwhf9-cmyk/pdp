@@ -881,7 +881,7 @@ const PROMPTS = {
    const tiles = feats.length
      ? `In each of the FOUR corners place a separate rounded-rectangle PHOTO TILE with a soft pale-blue rounded background — each tile a REALISTIC CLOSE-UP PHOTOGRAPH of one specific storage area of THIS exact bag, derived faithfully from the reference photos (same bag, same colours, same print, same trims, same zips): ${feats.map((f, k) => `the ${pos[k]} tile shows the ${f.toLowerCase()} (that part of the bag in genuine real-world use — e.g. an open main compartment holding books, notebooks and a bottle; a front pocket with small items; side mesh pockets holding water bottles; the interior organiser)`).join("; ")}. The four tiles are evenly sized, clearly separated, sitting in the four corners well clear of the centre bag.`
      : `Do NOT draw any corner tiles — only the centre bag on a clean pastel background.`;
-   return `${BASE(i)} PREMIUM "SPACE STORY" STORAGE-SHOWCASE catalogue layout. COMPOSITION: the hero product bag stands upright and CLOSED at the CENTRE of the image, large, sharp and faithful to the reference photos. ${tiles} Leave the TOP-LEFT area of the image empty for a title, and leave a small BLANK strip directly BELOW each corner tile (for a caption) plus a small BLANK plain space centred on each tile's TOP edge (for an icon) — the app adds the title, captions and icons itself. CRITICAL — ABSOLUTELY NO TEXT AND NO ICONS anywhere in the image: do not draw any words, letters, numbers, captions, labels or feature icons; leave all those areas blank. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
+   return `${BASE(i)} PREMIUM "SPACE STORY" STORAGE-SHOWCASE catalogue layout. COMPOSITION: the hero product bag stands upright and CLOSED at the CENTRE of the image, large, sharp and faithful to the reference photos. ${tiles} Leave the TOP-LEFT area of the image empty for a title, and keep clear plain pastel space around every tile — especially a clean gap just ABOVE and just BELOW each tile — for the app's icons and captions. CRITICAL — EXACTLY FOUR photo tiles and NOTHING else is added: do NOT draw any words, letters, numbers, captions, labels or feature icons, and do NOT draw any empty pills, blank caption strips, boxes, banners or extra rounded cards anywhere — only the four photo tiles and the centre bag. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
  },
  need: i=>{
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
@@ -1188,9 +1188,10 @@ async function overlayCards(dataUrl,labels,layout,iconMap){
 }
 
 /* Reference "Space Story" overlay: the model draws the centre bag + four corner
-   compartment PHOTO tiles; this adds the "SPACE STORY" title (top-left), and for
-   each corner an icon badge on the tile's top edge plus a white caption chip
-   below it. Positions match the corners the prompt asks the model to fill. */
+   compartment PHOTO tiles; this DETECTS each tile's real position, then anchors
+   the "SPACE STORY" title (top-left), an icon badge on each tile's top edge and a
+   white caption chip centred under it — so the labels track the tiles precisely
+   instead of sitting at guessed corners. */
 async function overlaySpaceCorners(dataUrl, labels, iconMap){
   const img=await loadImgEl(dataUrl);
   const W=img.width,H=img.height;
@@ -1198,39 +1199,77 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
   const ctx=c.getContext("2d"); ctx.drawImage(img,0,0);
   if(document.fonts&&document.fonts.load){ try{ await document.fonts.load(`800 ${Math.round(W*0.05)}px Syne`); await document.fonts.load(`700 ${Math.round(W*0.022)}px Outfit`); }catch(e){} }
 
+  /* snapshot the clean image + sample the flat background colour for tile detection */
+  let data=null; try{ data=ctx.getImageData(0,0,W,H).data; }catch(e){ data=null; }
+  const px=(fx,fy)=>{ const x=Math.round(W*fx),y=Math.round(H*fy),i=(y*W+x)*4; return [data[i],data[i+1],data[i+2]]; };
+  let bg=[236,228,246];
+  if(data){ const a=px(0.5,0.045),b=px(0.012,0.5),c2=px(0.988,0.5); bg=[(a[0]+b[0]+c2[0])/3,(a[1]+b[1]+c2[1])/3,(a[2]+b[2]+c2[2])/3]; }
+
+  /* find the photo tile inside one quadrant: cluster the columns that differ from
+     the background, keep the cluster nearest the OUTER edge (so the centre bag,
+     which sits toward the inner edge, is ignored), then its row extent. */
+  const detect=(rx0,rx1,ry0,ry1,outer)=>{
+    if(!data) return null;
+    const x0=Math.round(W*rx0),x1=Math.round(W*rx1),y0=Math.round(H*ry0),y1=Math.round(H*ry1);
+    const t2=34*34;
+    const marked=(x,y)=>{ const i=(y*W+x)*4; const dr=data[i]-bg[0],dg=data[i+1]-bg[1],db=data[i+2]-bg[2]; return dr*dr+dg*dg+db*db>t2; };
+    const colThresh=((y1-y0)/2)*0.16, gapMax=Math.round(W*0.03);
+    const cols=[]; for(let x=x0;x<x1;x++){ let cnt=0; for(let y=y0;y<y1;y+=2) if(marked(x,y)) cnt++; cols[x]=cnt>=colThresh?1:0; }
+    const clusters=[]; let cur=null,gap=0;
+    for(let x=x0;x<x1;x++){ if(cols[x]){ if(!cur)cur={s:x,e:x}; cur.e=x; gap=0; } else if(cur){ gap++; if(gap>gapMax){ clusters.push(cur); cur=null; } } }
+    if(cur) clusters.push(cur);
+    const wide=clusters.filter(cl=>(cl.e-cl.s)>=W*0.08);
+    if(!wide.length) return null;
+    const cl = outer==="L" ? wide.reduce((a,b)=>a.s<=b.s?a:b) : wide.reduce((a,b)=>a.e>=b.e?a:b);
+    const rowThresh=((cl.e-cl.s)/2)*0.16;
+    let top=-1,bot=-1;
+    for(let y=y0;y<y1;y++){ let cnt=0; for(let x=cl.s;x<=cl.e;x+=2) if(marked(x,y)) cnt++; if(cnt>=rowThresh){ if(top<0)top=y; bot=y; } }
+    if(top<0 || (bot-top)<H*0.06) return null;
+    return {left:cl.s,right:cl.e,top,bottom:bot};
+  };
+
   /* title, top-left */
   ctx.fillStyle="#1b1c22"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
   ctx.font=`800 ${Math.round(W*0.05)}px Syne, Outfit, Arial, sans-serif`;
   ctx.fillText("SPACE STORY", Math.round(W*0.05), Math.round(H*0.085));
 
-  /* the four corner tile centres (must match the prompt's corner tiles) */
-  const spots=[{cx:0.185,cy:0.34},{cx:0.815,cy:0.34},{cx:0.185,cy:0.74},{cx:0.815,cy:0.74}];
-  const tileHalfH=H*0.115;
+  const regions=[
+    {rx0:0.02,rx1:0.44,ry0:0.11,ry1:0.50,outer:"L"},   /* top-left    */
+    {rx0:0.56,rx1:0.98,ry0:0.11,ry1:0.50,outer:"R"},   /* top-right   */
+    {rx0:0.02,rx1:0.44,ry0:0.50,ry1:0.88,outer:"L"},   /* bottom-left */
+    {rx0:0.56,rx1:0.98,ry0:0.50,ry1:0.88,outer:"R"},   /* bottom-right*/
+  ];
+  const fb=[{cx:0.185,cy:0.30},{cx:0.815,cy:0.30},{cx:0.185,cy:0.70},{cx:0.815,cy:0.70}]; /* fallbacks */
   const iconR=Math.round(W*0.028);
-  const capSz=Math.round(W*0.021);
+
   for(let k=0;k<Math.min(4,labels.length);k++){
-    const s=spots[k], cx=W*s.cx, cy=H*s.cy, label=labels[k];
-    /* icon badge — white circle sitting on the tile's top edge */
-    const by=cy-tileHalfH+Math.round(H*0.005);
-    ctx.beginPath(); ctx.arc(cx,by,iconR,0,Math.PI*2);
+    const r=regions[k], label=labels[k];
+    const tile=detect(r.rx0,r.rx1,r.ry0,r.ry1,r.outer);
+    let cx,topY,botY;
+    if(tile){ cx=(tile.left+tile.right)/2; topY=tile.top; botY=tile.bottom; }
+    else { cx=W*fb[k].cx; topY=H*fb[k].cy-H*0.115; botY=H*fb[k].cy+H*0.115; }
+
+    /* icon badge — white circle straddling the tile's top edge */
+    ctx.beginPath(); ctx.arc(cx,topY,iconR,0,Math.PI*2);
     ctx.fillStyle="#ffffff"; ctx.fill();
     ctx.strokeStyle="#dbe4ee"; ctx.lineWidth=Math.max(1,W*0.0013); ctx.stroke();
     const bk=label.replace(/^\d+\s+/,"").replace(/s$/i,"");
     const iconSrc=iconMap&&(iconMap[label]||iconMap[bk]||iconMap[bk+"s"]||iconMap[bk+"S"]);
-    if(iconSrc){ try{ const ic=await loadImgEl(iconSrc); const sz=iconR*1.25; ctx.drawImage(ic,cx-sz/2,by-sz/2,sz,sz); }catch(e){} }
-    /* caption chip below the tile, auto-fit the label to a max width */
-    let cs=capSz; ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`;
-    const maxCap=W*0.26;
+    if(iconSrc){ try{ const ic=await loadImgEl(iconSrc); const sz=iconR*1.25; ctx.drawImage(ic,cx-sz/2,topY-sz/2,sz,sz); }catch(e){} }
+
+    /* caption chip centred just below the tile, auto-fit and clamped on-canvas */
+    let cs=Math.round(W*0.021); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`;
+    const maxCap=W*0.28;
     if(ctx.measureText(label).width>maxCap){ cs=Math.max(9,Math.floor(cs*maxCap/ctx.measureText(label).width)); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`; }
-    const tw=ctx.measureText(label).width;
-    const chW=tw+Math.round(W*0.045), chH=Math.round(cs*2.3);
-    const chx=cx-chW/2, chy=cy+tileHalfH+Math.round(H*0.012);
+    const tw=ctx.measureText(label).width, chW=tw+Math.round(W*0.045), chH=Math.round(cs*2.3);
+    let chx=cx-chW/2; chx=Math.max(Math.round(W*0.012), Math.min(chx, W-Math.round(W*0.012)-chW));
+    const chy=Math.min(botY+Math.round(H*0.014), H-chH-Math.round(H*0.012));
     ctx.save();
     ctx.shadowColor="rgba(20,40,70,0.16)"; ctx.shadowBlur=W*0.012; ctx.shadowOffsetY=W*0.003;
     roundRectPath(ctx,chx,chy,chW,chH,chH/2); ctx.fillStyle="#ffffff"; ctx.fill();
     ctx.restore();
     ctx.fillStyle="#20344f"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText(label,cx,chy+chH/2);
+    ctx.fillText(label,chx+chW/2,chy+chH/2);
   }
   return c.toDataURL("image/png");
 }
