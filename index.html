@@ -880,7 +880,7 @@ const PROMPTS = {
    const feats = i.space.slice(0, 4);
    const pos = ["TOP-LEFT", "TOP-RIGHT", "BOTTOM-LEFT", "BOTTOM-RIGHT"];
    const tiles = feats.length
-     ? `In the FOUR corners place four SMALL rounded-rectangle PHOTO TILES, each with a soft pale-blue rounded background and each MUCH SMALLER than the centre bag (only about 17-21% of the image width each — small neat thumbnails, not big panels). Each tile is a REALISTIC CLOSE-UP PHOTOGRAPH of one storage area of THIS exact bag, faithful to the reference photos (same bag, colours, print, trims, zips): ${feats.map((f, k) => `the ${pos[k]} tile shows the ${f.toLowerCase()} in genuine real-world use`).join("; ")}. Tuck the four small tiles right into the far corners, leaving a wide clear pastel margin between them and the large centre bag.`
+     ? `In the FOUR corners place four SMALL rounded-rectangle PHOTO TILES, each with a soft pale-blue rounded background and each MUCH SMALLER than the centre bag (only about 11-14% of the image width each — small neat thumbnails, not big panels). Each tile is a REALISTIC CLOSE-UP PHOTOGRAPH of one storage area of THIS exact bag, faithful to the reference photos (same bag, colours, print, trims, zips): ${feats.map((f, k) => `the ${pos[k]} tile shows the ${f.toLowerCase()} in genuine real-world use`).join("; ")}. Tuck the four small tiles right into the far corners, leaving a wide clear pastel margin between them and the large centre bag.`
      : `Do NOT draw any corner tiles — only the centre bag on a clean pastel background.`;
    return `${BASE(i)} A premium marketplace "what fits inside" storage layout. COMPOSITION — THE BAG IS THE HERO: a SINGLE product bag stands upright and CLOSED at the EXACT CENTRE, sharp and faithful to the reference photos, and it is unmistakably the DOMINANT, LARGEST element of the image — occupying about 44-50% of the image width and 60-68% of the height, noticeably bigger than every corner tile. ${tiles} CRITICAL — NO TEXT AND NO TITLE ANYWHERE: do NOT draw any title, heading, banner, ribbon, wordmark, label, caption, watermark, letters, numbers or feature icons anywhere in the image — leave the top strip and the space just above and below each tile as clean empty pastel for the app's own title, icons and captions. Draw EXACTLY the centre bag and the four photo tiles and NOTHING else — no empty pills, blank strips, boxes, banners or extra cards. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
  },
@@ -1241,7 +1241,7 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
     {rx0:0.56,rx1:0.98,ry0:0.50,ry1:0.88,outer:"R"},   /* bottom-right*/
   ];
   const fb=[{cx:0.185,cy:0.30},{cx:0.815,cy:0.30},{cx:0.185,cy:0.70},{cx:0.815,cy:0.70}]; /* fallbacks */
-  const iconR=Math.round(W*0.028);
+  const iconR=Math.round(W*0.024);
 
   for(let k=0;k<Math.min(4,labels.length);k++){
     const r=regions[k], label=labels[k];
@@ -1250,21 +1250,25 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
     if(tile){ cx=(tile.left+tile.right)/2; topY=tile.top; botY=tile.bottom; }
     else { cx=W*fb[k].cx; topY=H*fb[k].cy-H*0.115; botY=H*fb[k].cy+H*0.115; }
 
-    /* icon badge — white circle straddling the tile's top edge */
-    ctx.beginPath(); ctx.arc(cx,topY,iconR,0,Math.PI*2);
+    /* caption chip auto-fit + clamped, with the icon badge attached directly
+       ABOVE it so the icon always tracks its own tile/caption (no floating) */
+    let cs=Math.round(W*0.019); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`;
+    const maxCap=W*0.24;
+    if(ctx.measureText(label).width>maxCap){ cs=Math.max(9,Math.floor(cs*maxCap/ctx.measureText(label).width)); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`; }
+    const tw=ctx.measureText(label).width, chW=tw+Math.round(W*0.04), chH=Math.round(cs*2.2);
+    let chx=cx-chW/2; chx=Math.max(Math.round(W*0.012), Math.min(chx, W-Math.round(W*0.012)-chW));
+    /* stack sits just below the tile: [icon badge] then [caption] — keep on-canvas */
+    const iGap=Math.round(H*0.005);
+    let chy=Math.min(botY+iconR*2+iGap+Math.round(H*0.006), H-chH-Math.round(H*0.01));
+    const iy=chy-iGap-iconR;
+    /* icon badge */
+    ctx.beginPath(); ctx.arc(cx,iy,iconR,0,Math.PI*2);
     ctx.fillStyle="#ffffff"; ctx.fill();
     ctx.strokeStyle="#dbe4ee"; ctx.lineWidth=Math.max(1,W*0.0013); ctx.stroke();
     const bk=label.replace(/^\d+\s+/,"").replace(/s$/i,"");
     const iconSrc=iconMap&&(iconMap[label]||iconMap[bk]||iconMap[bk+"s"]||iconMap[bk+"S"]);
-    if(iconSrc){ try{ const ic=await loadImgEl(iconSrc); const sz=iconR*1.25; ctx.drawImage(ic,cx-sz/2,topY-sz/2,sz,sz); }catch(e){} }
-
-    /* caption chip centred just below the tile, auto-fit and clamped on-canvas */
-    let cs=Math.round(W*0.021); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`;
-    const maxCap=W*0.28;
-    if(ctx.measureText(label).width>maxCap){ cs=Math.max(9,Math.floor(cs*maxCap/ctx.measureText(label).width)); ctx.font=`700 ${cs}px Outfit, Archivo, Arial, sans-serif`; }
-    const tw=ctx.measureText(label).width, chW=tw+Math.round(W*0.045), chH=Math.round(cs*2.3);
-    let chx=cx-chW/2; chx=Math.max(Math.round(W*0.012), Math.min(chx, W-Math.round(W*0.012)-chW));
-    const chy=Math.min(botY+Math.round(H*0.014), H-chH-Math.round(H*0.012));
+    if(iconSrc){ try{ const ic=await loadImgEl(iconSrc); const sz=iconR*1.2; ctx.drawImage(ic,cx-sz/2,iy-sz/2,sz,sz); }catch(e){} }
+    /* caption chip */
     ctx.save();
     ctx.shadowColor="rgba(20,40,70,0.16)"; ctx.shadowBlur=W*0.012; ctx.shadowOffsetY=W*0.003;
     roundRectPath(ctx,chx,chy,chW,chH,chH/2); ctx.fillStyle="#ffffff"; ctx.fill();
