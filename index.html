@@ -1234,13 +1234,16 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
   ctx.font=`800 ${Math.round(W*0.05)}px Syne, Outfit, Arial, sans-serif`;
   ctx.fillText("SPACE STORY", Math.round(W*0.05), Math.round(H*0.085));
 
+  /* zones kept well away from the centre bag so a corner tile never merges with
+     it; capY is the lowest a caption may drop for that row, so top-row captions
+     stay tucked under their small tiles instead of floating into the middle */
   const regions=[
-    {rx0:0.02,rx1:0.44,ry0:0.11,ry1:0.50,outer:"L"},   /* top-left    */
-    {rx0:0.56,rx1:0.98,ry0:0.11,ry1:0.50,outer:"R"},   /* top-right   */
-    {rx0:0.02,rx1:0.44,ry0:0.50,ry1:0.88,outer:"L"},   /* bottom-left */
-    {rx0:0.56,rx1:0.98,ry0:0.50,ry1:0.88,outer:"R"},   /* bottom-right*/
+    {rx0:0.02,rx1:0.32,ry0:0.10,ry1:0.44,outer:"L",capY:0.38},   /* top-left    */
+    {rx0:0.68,rx1:0.98,ry0:0.10,ry1:0.44,outer:"R",capY:0.38},   /* top-right   */
+    {rx0:0.02,rx1:0.32,ry0:0.56,ry1:0.90,outer:"L",capY:0.90},   /* bottom-left */
+    {rx0:0.68,rx1:0.98,ry0:0.56,ry1:0.90,outer:"R",capY:0.90},   /* bottom-right*/
   ];
-  const fb=[{cx:0.185,cy:0.30},{cx:0.815,cy:0.30},{cx:0.185,cy:0.70},{cx:0.815,cy:0.70}]; /* fallbacks */
+  const fb=[{cx:0.16,cy:0.24},{cx:0.84,cy:0.24},{cx:0.16,cy:0.74},{cx:0.84,cy:0.74}]; /* fallbacks */
   const iconR=Math.round(W*0.024);
 
   for(let k=0;k<Math.min(4,labels.length);k++){
@@ -1248,7 +1251,9 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
     const tile=detect(r.rx0,r.rx1,r.ry0,r.ry1,r.outer);
     let cx,topY,botY;
     if(tile){ cx=(tile.left+tile.right)/2; topY=tile.top; botY=tile.bottom; }
-    else { cx=W*fb[k].cx; topY=H*fb[k].cy-H*0.115; botY=H*fb[k].cy+H*0.115; }
+    else { cx=W*fb[k].cx; topY=H*fb[k].cy-H*0.10; botY=H*fb[k].cy+H*0.10; }
+    /* never let the caption drop far below its small corner tile */
+    botY=Math.min(botY, Math.round(H*r.capY));
 
     /* caption chip auto-fit + clamped, with the icon badge attached directly
        ABOVE it so the icon always tracks its own tile/caption (no floating) */
