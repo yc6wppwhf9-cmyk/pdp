@@ -872,16 +872,17 @@ const PROMPTS = {
    return `${BASE(i)} Catalogue infographic. Title at top centre inside a white rounded outline bubble, reading exactly these four words and nothing else: Comfort That Carries Well — the words Comfort That in dark text, the words Carries Well in an accent colour, separated by single plain spaces with no character of any kind before, between or after them. ${viewPart} ${cardPart} Background: ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':`soft pastel tone matching the bag's main colour, with a few subtle 3D decorative elements of ${themeDecor(i)} resting only along the very bottom edge`}. Premium kids-catalogue style.`;
  },
  space: i=>{
-   /* Reference "Space Story" layout: a large centre bag with FOUR corner photo
-      tiles, each a close-up of one storage area. The app overlays the title,
-      the per-tile icons and the captions afterwards, so the model draws only the
-      bag and the four photo tiles and leaves every text/icon area blank. */
+   /* Storage-showcase layout: ONE large hero bag centred with FOUR SMALL corner
+      photo tiles. The app draws the title, per-tile icons and captions afterwards,
+      so the model draws only the bag + four photo tiles and renders NO text at all.
+      (The literal words "space story"/"storage showcase" are kept OUT of this
+      prompt because the model would otherwise render them as a garbled title.) */
    const feats = i.space.slice(0, 4);
    const pos = ["TOP-LEFT", "TOP-RIGHT", "BOTTOM-LEFT", "BOTTOM-RIGHT"];
    const tiles = feats.length
-     ? `In each of the FOUR corners place a separate rounded-rectangle PHOTO TILE with a soft pale-blue rounded background — each tile a REALISTIC CLOSE-UP PHOTOGRAPH of one specific storage area of THIS exact bag, derived faithfully from the reference photos (same bag, same colours, same print, same trims, same zips): ${feats.map((f, k) => `the ${pos[k]} tile shows the ${f.toLowerCase()} (that part of the bag in genuine real-world use — e.g. an open main compartment holding books, notebooks and a bottle; a front pocket with small items; side mesh pockets holding water bottles; the interior organiser)`).join("; ")}. The four tiles are evenly sized, clearly separated, sitting in the four corners well clear of the centre bag.`
+     ? `In the FOUR corners place four SMALL rounded-rectangle PHOTO TILES, each with a soft pale-blue rounded background and each clearly SMALLER than the centre bag (roughly 22-26% of the image width each). Each tile is a REALISTIC CLOSE-UP PHOTOGRAPH of one storage area of THIS exact bag, faithful to the reference photos (same bag, colours, print, trims, zips): ${feats.map((f, k) => `the ${pos[k]} tile shows the ${f.toLowerCase()} in genuine real-world use`).join("; ")}. Tuck the four tiles into the far corners with clear pastel space between them and the big centre bag.`
      : `Do NOT draw any corner tiles — only the centre bag on a clean pastel background.`;
-   return `${BASE(i)} PREMIUM "SPACE STORY" STORAGE-SHOWCASE catalogue layout. COMPOSITION: the hero product bag stands upright and CLOSED at the CENTRE of the image, large, sharp and faithful to the reference photos. ${tiles} Leave the TOP-LEFT area of the image empty for a title, and keep clear plain pastel space around every tile — especially a clean gap just ABOVE and just BELOW each tile — for the app's icons and captions. CRITICAL — EXACTLY FOUR photo tiles and NOTHING else is added: do NOT draw any words, letters, numbers, captions, labels or feature icons, and do NOT draw any empty pills, blank caption strips, boxes, banners or extra rounded cards anywhere — only the four photo tiles and the centre bag. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
+   return `${BASE(i)} A premium marketplace "what fits inside" storage layout. COMPOSITION — THE BAG IS THE HERO: a SINGLE product bag stands upright and CLOSED at the EXACT CENTRE, sharp and faithful to the reference photos, and it is unmistakably the DOMINANT, LARGEST element of the image — occupying about 44-50% of the image width and 60-68% of the height, noticeably bigger than every corner tile. ${tiles} CRITICAL — NO TEXT AND NO TITLE ANYWHERE: do NOT draw any title, heading, banner, ribbon, wordmark, label, caption, watermark, letters, numbers or feature icons anywhere in the image — leave the top strip and the space just above and below each tile as clean empty pastel for the app's own title, icons and captions. Draw EXACTLY the centre bag and the four photo tiles and NOTHING else — no empty pills, blank strips, boxes, banners or extra cards. Background: a completely plain, flat, uniform ${document.getElementById('whiteBgMode').checked?'pure clean white #FFFFFF':"soft pastel colour matching the bag"} fill, evenly lit, with nothing else in it — no second or ghosted bag, no scenery${document.getElementById('whiteBgMode').checked?'':`, aside from a few small subtle 3D decorative elements of ${themeDecor(i)} only along the very bottom edge`}. Premium school-bag marketplace style.`;
  },
  need: i=>{
    const list = (i.needItems||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,4);
@@ -1559,9 +1560,8 @@ async function overlayDimsSheet(dataUrl, d, size) {
 
   /* ---- DEPTH arrow (diagonal off the bottom-right corner) ------------------- */
   if (d.D) {
-    /* clamp the arrow tip so the rotated label never runs off the bottom edge */
-    const sx = box.right, sy = Math.min(box.bottom, Math.round(H * 0.78));
-    const ex = box.right + Math.round(W * 0.06), ey = Math.min(sy + Math.round(H * 0.045), H - Math.round(H * 0.10));
+    const sx = box.right, sy = Math.min(box.bottom, Math.round(H * 0.76));
+    const ex = box.right + Math.round(W * 0.075), ey = Math.min(sy + Math.round(H * 0.05), H - Math.round(H * 0.12));
     ctx.strokeStyle = PURPLE; ctx.fillStyle = PURPLE; ctx.lineWidth = lw;
     ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
     const ang = Math.atan2(ey - sy, ex - sx);
@@ -1572,15 +1572,17 @@ async function overlayDimsSheet(dataUrl, d, size) {
       ctx.closePath(); ctx.fill();
     };
     ah(sx, sy, -1); ah(ex, ey, 1);
+    /* label starts JUST PAST the arrow tip and reads outward (down-right), with
+       the two lines offset to either side of the arrow line so neither sits on it
+       and it clears the width arrow/label at the corner */
     ctx.save();
-    ctx.translate((sx + ex) / 2 + Math.round(W * 0.028), (sy + ey) / 2 + Math.round(H * 0.006));
+    ctx.translate(ex + Math.cos(ang) * Math.round(W * 0.012), ey + Math.sin(ang) * Math.round(W * 0.012));
     ctx.rotate(ang);
-    ctx.textAlign = "center"; ctx.textBaseline = "top";
-    const dOff = Math.round(W * 0.010);
-    ctx.font = `800 ${Math.round(W * 0.022)}px ${F}`; ctx.fillStyle = INK;
-    ctx.fillText("DEPTH", 0, dOff);
-    ctx.font = `600 ${Math.round(W * 0.016)}px ${F}`; ctx.fillStyle = "#333333";
-    ctx.fillText(`${d.D} IN (${d.Dcm} CM)`, 0, dOff + Math.round(W * 0.024));
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.font = `800 ${Math.round(W * 0.020)}px ${F}`; ctx.fillStyle = INK;
+    ctx.fillText("DEPTH", 0, -Math.round(W * 0.011));
+    ctx.font = `600 ${Math.round(W * 0.015)}px ${F}`; ctx.fillStyle = "#333333";
+    ctx.fillText(`${d.D} IN (${d.Dcm} CM)`, 0, Math.round(W * 0.011));
     ctx.restore();
   }
 
