@@ -1263,9 +1263,10 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
     let cx,topY,botY;
     if(tile){
       cx=(tile.left+tile.right)/2; topY=tile.top;
-      /* cap the tile bottom to a sane multiple of its width so a detection
-         overshoot (catching the bag/decoration below) can't drop the caption */
-      botY=Math.min(tile.bottom, tile.top+(tile.right-tile.left)*1.5);
+      /* anchor the caption a fixed fraction below the tile TOP (reliable) using the
+         tile WIDTH — the detected bottom overshoots when it catches the bag or the
+         decorations below, dropping the caption too far */
+      botY=topY+(tile.right-tile.left)*1.25;
     }
     else { cx=W*(r.outer==="L"?0.15:0.85); botY=H*((r.ry0+r.ry1)/2)+H*0.05; topY=botY-H*0.12; }
     /* never let the caption drop past this tile's band */
@@ -1308,7 +1309,12 @@ function findFrontBag(ctx, W, H) {
   const y0 = Math.round(H * 0.12), y1 = Math.round(H * 0.95), bh = y1 - y0;
   let d;
   try { d = ctx.getImageData(0, y0, xMax, bh).data; } catch (e) { return null; }
-  const ink = (x, y) => { const i = (y * xMax + x) * 4; return d[i] < 235 || d[i+1] < 235 || d[i+2] < 235; };
+  /* Detect the bag as pixels that differ from the BACKGROUND colour (sampled from
+     the far-left top corner, which is always empty margin) — the sheet background
+     is a pale tint of the bag's colour, so a fixed near-white threshold would count
+     a coloured (e.g. blue) background as bag and push the edges out. */
+  const bR = d[0], bG = d[1], bB = d[2];
+  const ink = (x, y) => { const i = (y * xMax + x) * 4; const dr = d[i]-bR, dg = d[i+1]-bG, db = d[i+2]-bB; return (dr*dr + dg*dg + db*db) > 1600; };
   /* cluster columns across the middle band only — the title sits above it and
      the width arrow/label below it, so the bag is all that can match here */
   const mb0 = Math.round(bh * 0.20), mb1 = Math.round(bh * 0.62);
