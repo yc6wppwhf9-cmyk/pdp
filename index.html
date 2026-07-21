@@ -1238,10 +1238,14 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
   const bagAcc=sampleBagAccent(ctx,{left:Math.round(W*0.34),right:Math.round(W*0.66),top:Math.round(H*0.36),bottom:Math.round(H*0.74)},W,H);
   if(bagAcc){ const hsl=rgbToHsl(bagAcc[0],bagAcc[1],bagAcc[2]); const sat=Math.min(0.85,Math.max(0.5,hsl[1])); accent=rgbToHex(hslToRgb(hsl[0],sat,0.42)); }
 
-  /* title — ALWAYS centred at the top, in the bag's theme colour */
+  /* title — centred at the top in the bag's theme colour, AUTO-SIZED to fit the
+     clear centre gap between the top corner tiles so it can never overlap them */
   ctx.fillStyle=accent; ctx.textAlign="center"; ctx.textBaseline="alphabetic";
-  ctx.font=`800 ${Math.round(W*0.046)}px Syne, Outfit, Arial, sans-serif`;
-  ctx.fillText("SPACE STORY", W/2, Math.round(H*0.085));
+  let tSz=Math.round(W*0.048);
+  ctx.font=`800 ${tSz}px Syne, Outfit, Arial, sans-serif`;
+  const maxTW=W*0.40, tW=ctx.measureText("SPACE STORY").width;
+  if(tW>maxTW){ tSz=Math.floor(tSz*maxTW/tW); ctx.font=`800 ${tSz}px Syne, Outfit, Arial, sans-serif`; }
+  ctx.fillText("SPACE STORY", W/2, Math.round(H*0.08));
 
   /* Lay the selected tiles out in TWO side columns (left = first half, right =
      second half) so ANY number the user selects is shown — not a fixed four.
