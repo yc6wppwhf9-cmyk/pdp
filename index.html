@@ -1253,16 +1253,21 @@ async function overlaySpaceCorners(dataUrl, labels, iconMap){
     for(let j=0;j<count;j++){ const y0=top+bandH*j, y1=top+bandH*(j+1);
       regions.push({rx0,rx1,ry0:y0+0.008,ry1:y1-0.02,outer,capY:y1-0.03}); }
   };
-  buildCol(leftN,0.02,0.30,"L");
-  buildCol(rightN,0.70,0.98,"R");
+  buildCol(leftN,0.02,0.27,"L");
+  buildCol(rightN,0.73,0.98,"R");
   const iconR=Math.round(W*0.024);
 
   for(let k=0;k<N;k++){
     const r=regions[k], label=labels[k];
     const tile=detect(r.rx0,r.rx1,r.ry0,r.ry1,r.outer);
     let cx,topY,botY;
-    if(tile){ cx=(tile.left+tile.right)/2; topY=tile.top; botY=tile.bottom; }
-    else { cx=W*(r.outer==="L"?0.16:0.84); botY=H*((r.ry0+r.ry1)/2)+H*0.05; topY=botY-H*0.12; }
+    if(tile){
+      cx=(tile.left+tile.right)/2; topY=tile.top;
+      /* cap the tile bottom to a sane multiple of its width so a detection
+         overshoot (catching the bag/decoration below) can't drop the caption */
+      botY=Math.min(tile.bottom, tile.top+(tile.right-tile.left)*1.5);
+    }
+    else { cx=W*(r.outer==="L"?0.15:0.85); botY=H*((r.ry0+r.ry1)/2)+H*0.05; topY=botY-H*0.12; }
     /* never let the caption drop past this tile's band */
     botY=Math.min(botY, Math.round(H*r.capY));
 
